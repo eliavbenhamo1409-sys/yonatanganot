@@ -348,10 +348,13 @@ export async function POST(request: NextRequest) {
     
     if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
       // Serverless environment (Vercel)
-      const chromium = (await import('@sparticuz/chromium')).default;
+      const chromium = (await import('@sparticuz/chromium-min')).default;
       puppeteer = await import('puppeteer-core');
       
-      const execPath = await chromium.executablePath();
+      // Use pre-built chromium from official @Sparticuz releases
+      const execPath = await chromium.executablePath(
+        'https://github.com/Sparticuz/chromium/releases/download/v131.0.0/chromium-v131.0.0-pack.tar'
+      );
       console.log('[PDF API] Chromium path:', execPath);
       
       browser = await puppeteer.default.launch({

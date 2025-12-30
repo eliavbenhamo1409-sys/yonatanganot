@@ -11,7 +11,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@react-pdf/renderer": "^4.3.2",
-    "@sparticuz/chromium": "^143.0.0",
+    "@sparticuz/chromium-min": "^143.0.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.5",
