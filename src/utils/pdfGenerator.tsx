@@ -13,20 +13,24 @@ import {
 import { BusinessInfo, ReceiptData, ReceiptSettings } from '@/types';
 import JSZip from 'jszip';
 
-// Register Hebrew font - Rubik from Google Fonts
-Font.register({
-  family: 'Rubik',
-  fonts: [
-    {
-      src: 'https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4iFV0U1.ttf',
-      fontWeight: 400,
-    },
-    {
-      src: 'https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-NYiFV0U1.ttf',
-      fontWeight: 700,
-    },
-  ],
-});
+// Register Hebrew font - Alef from CDN (more reliable)
+try {
+  Font.register({
+    family: 'Alef',
+    fonts: [
+      {
+        src: 'https://cdn.jsdelivr.net/npm/@fontsource/alef@5.0.5/files/alef-hebrew-400-normal.woff',
+        fontWeight: 400,
+      },
+      {
+        src: 'https://cdn.jsdelivr.net/npm/@fontsource/alef@5.0.5/files/alef-hebrew-700-normal.woff',
+        fontWeight: 700,
+      },
+    ],
+  });
+} catch (e) {
+  console.log('[Font] Could not register Alef font:', e);
+}
 
 // Disable word hyphenation
 Font.registerHyphenationCallback((word) => [word]);
@@ -73,11 +77,10 @@ function createStyles(template: ReceiptTemplate) {
       flexDirection: 'column',
       backgroundColor: '#ffffff',
       padding: 40,
-      fontFamily: 'Rubik',
+      fontFamily: 'Alef',
     },
-    // Header - RTL layout
     header: {
-      flexDirection: 'row-reverse',
+      flexDirection: 'row',
       justifyContent: 'space-between',
       marginBottom: 30,
       paddingBottom: 20,
@@ -85,149 +88,129 @@ function createStyles(template: ReceiptTemplate) {
       borderBottomColor: colors.primary,
       borderBottomStyle: 'solid',
     },
-    businessInfo: {
-      textAlign: 'right',
-      maxWidth: '55%',
+    businessSection: {
+      width: '50%',
     },
     businessName: {
-      fontSize: 24,
+      fontSize: 22,
       fontWeight: 700,
       color: colors.primary,
       marginBottom: 8,
-      textAlign: 'right',
     },
     businessDetail: {
       fontSize: 10,
       color: colors.textLight,
       marginBottom: 4,
+    },
+    receiptSection: {
+      width: '40%',
       textAlign: 'right',
     },
-    receiptInfo: {
-      textAlign: 'left',
-      maxWidth: '40%',
+    receiptTitle: {
+      fontSize: 28,
+      fontWeight: 700,
+      color: colors.primary,
+      marginBottom: 8,
     },
     receiptNumber: {
       fontSize: 14,
-      fontWeight: 700,
-      color: colors.primary,
+      color: colors.text,
       marginBottom: 4,
-      textAlign: 'left',
     },
     receiptDate: {
-      fontSize: 11,
+      fontSize: 12,
       color: colors.textLight,
-      textAlign: 'left',
     },
-    // Title bar
-    titleBar: {
-      backgroundColor: colors.primary,
-      padding: 15,
-      marginBottom: 25,
-      borderRadius: template === 'modern' ? 8 : 0,
+    divider: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      borderBottomStyle: 'solid',
+      marginVertical: 15,
     },
-    titleText: {
-      fontSize: 20,
-      fontWeight: 700,
-      color: '#ffffff',
-      textAlign: 'center',
-    },
-    // Customer section
     customerSection: {
-      marginBottom: 25,
+      marginBottom: 20,
       padding: 15,
       backgroundColor: colors.light,
       borderRadius: template === 'modern' ? 8 : 0,
-      borderRightWidth: 4,
-      borderRightColor: colors.secondary,
-      borderRightStyle: 'solid',
     },
     customerLabel: {
-      fontSize: 10,
+      fontSize: 11,
       color: colors.textLight,
       marginBottom: 5,
-      textAlign: 'right',
     },
     customerName: {
       fontSize: 16,
       fontWeight: 700,
       color: colors.text,
-      textAlign: 'right',
     },
-    // Details table
-    table: {
-      marginBottom: 25,
+    detailsSection: {
+      marginBottom: 20,
     },
-    tableHeader: {
-      flexDirection: 'row-reverse',
+    detailsHeader: {
+      flexDirection: 'row',
       backgroundColor: colors.primary,
-      paddingVertical: 12,
+      paddingVertical: 10,
       paddingHorizontal: 15,
     },
-    tableHeaderCell: {
+    detailsHeaderText: {
       fontSize: 11,
       fontWeight: 700,
       color: '#ffffff',
-      textAlign: 'center',
     },
-    tableRow: {
-      flexDirection: 'row-reverse',
+    detailsRow: {
+      flexDirection: 'row',
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
       borderBottomStyle: 'solid',
       paddingVertical: 12,
       paddingHorizontal: 15,
-      backgroundColor: '#ffffff',
     },
-    tableCell: {
+    detailsCell: {
       fontSize: 11,
       color: colors.text,
-      textAlign: 'center',
     },
-    col1: { width: '30%' },
-    col2: { width: '25%' },
-    col3: { width: '25%' },
-    col4: { width: '20%' },
-    // Total section
+    colDesc: { width: '40%' },
+    colDate: { width: '20%' },
+    colPayment: { width: '20%' },
+    colAmount: { width: '20%', textAlign: 'right' },
     totalSection: {
-      flexDirection: 'row-reverse',
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginTop: 10,
+      marginBottom: 30,
+    },
+    totalBox: {
       backgroundColor: colors.accent,
-      paddingVertical: 15,
+      paddingVertical: 12,
       paddingHorizontal: 25,
       borderRadius: template === 'modern' ? 8 : 0,
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 20,
     },
     totalLabel: {
-      fontSize: 16,
-      fontWeight: 700,
+      fontSize: 12,
       color: '#ffffff',
+      marginBottom: 2,
     },
     totalAmount: {
-      fontSize: 22,
+      fontSize: 24,
       fontWeight: 700,
       color: '#ffffff',
     },
-    // Notes
     notesSection: {
-      marginBottom: 25,
-      padding: 15,
+      marginBottom: 20,
+      padding: 12,
       backgroundColor: colors.light,
-      borderRadius: template === 'modern' ? 8 : 0,
+      borderRadius: 4,
     },
     notesLabel: {
-      fontSize: 11,
+      fontSize: 10,
       fontWeight: 700,
       color: colors.text,
-      marginBottom: 5,
-      textAlign: 'right',
+      marginBottom: 4,
     },
     notesText: {
       fontSize: 10,
       color: colors.textLight,
-      textAlign: 'right',
     },
-    // Footer
     footer: {
       position: 'absolute',
       bottom: 30,
@@ -237,22 +220,17 @@ function createStyles(template: ReceiptTemplate) {
       borderTopColor: colors.border,
       borderTopStyle: 'solid',
       paddingTop: 15,
-    },
-    footerRow: {
-      flexDirection: 'row-reverse',
+      flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
     },
     footerText: {
       fontSize: 9,
       color: colors.textLight,
-      textAlign: 'right',
     },
-    signatureText: {
+    footerSignature: {
       fontSize: 10,
       fontWeight: 700,
       color: colors.primary,
-      textAlign: 'left',
     },
   });
 }
@@ -275,7 +253,6 @@ const formatDateSafe = (date: Date | string | null | undefined): string => {
     if (date instanceof Date) {
       d = date;
     } else if (typeof date === 'string') {
-      // Try DD/MM/YYYY format
       const parts = date.split('/');
       if (parts.length === 3) {
         const day = parseInt(parts[0], 10);
@@ -289,9 +266,7 @@ const formatDateSafe = (date: Date | string | null | undefined): string => {
       d = new Date();
     }
     
-    if (isNaN(d.getTime())) {
-      return formatTodayDate();
-    }
+    if (isNaN(d.getTime())) return formatTodayDate();
     
     const day = d.getDate().toString().padStart(2, '0');
     const month = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -310,7 +285,6 @@ const formatTodayDate = (): string => {
   return `${day}/${month}/${year}`;
 };
 
-// Business type in Hebrew
 const getBusinessTypeHebrew = (type: string): string => {
   const types: Record<string, string> = {
     'osek_patur': 'עוסק פטור',
@@ -344,72 +318,52 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          {/* Business Info - Right side */}
-          <View style={styles.businessInfo}>
-            <Text style={styles.businessName}>{businessInfo.name}</Text>
+          <View style={styles.businessSection}>
+            <Text style={styles.businessName}>{businessInfo.name || 'שם העסק'}</Text>
             <Text style={styles.businessDetail}>
-              {getBusinessTypeHebrew(businessInfo.businessType)} | {businessInfo.businessId}
+              {getBusinessTypeHebrew(businessInfo.businessType)} | {businessInfo.businessId || '000000000'}
             </Text>
-            {businessInfo.address && (
-              <Text style={styles.businessDetail}>{businessInfo.address}</Text>
-            )}
-            {businessInfo.phone && (
-              <Text style={styles.businessDetail}>{businessInfo.phone}</Text>
-            )}
-            {businessInfo.email && (
-              <Text style={styles.businessDetail}>{businessInfo.email}</Text>
-            )}
+            {businessInfo.address && <Text style={styles.businessDetail}>{businessInfo.address}</Text>}
+            {businessInfo.phone && <Text style={styles.businessDetail}>{businessInfo.phone}</Text>}
+            {businessInfo.email && <Text style={styles.businessDetail}>{businessInfo.email}</Text>}
           </View>
           
-          {/* Receipt Info - Left side */}
-          <View style={styles.receiptInfo}>
-            <Text style={styles.receiptNumber}>קבלה מס׳ {receipt.receiptNumber}</Text>
+          <View style={styles.receiptSection}>
+            <Text style={styles.receiptTitle}>קבלה</Text>
+            <Text style={styles.receiptNumber}>מספר: {receipt.receiptNumber}</Text>
             <Text style={styles.receiptDate}>תאריך: {formattedDate}</Text>
           </View>
         </View>
 
-        {/* Title Bar */}
-        <View style={styles.titleBar}>
-          <Text style={styles.titleText}>קבלה</Text>
-        </View>
-
-        {/* Customer Section */}
+        {/* Customer */}
         <View style={styles.customerSection}>
           <Text style={styles.customerLabel}>התקבל מאת:</Text>
           <Text style={styles.customerName}>{receipt.customerName || 'לקוח'}</Text>
         </View>
 
         {/* Details Table */}
-        <View style={styles.table}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderCell, styles.col1]}>סכום</Text>
-            <Text style={[styles.tableHeaderCell, styles.col2]}>אמצעי תשלום</Text>
-            <Text style={[styles.tableHeaderCell, styles.col3]}>תאריך</Text>
-            <Text style={[styles.tableHeaderCell, styles.col4]}>פירוט</Text>
+        <View style={styles.detailsSection}>
+          <View style={styles.detailsHeader}>
+            <Text style={[styles.detailsHeaderText, styles.colDesc]}>פירוט</Text>
+            <Text style={[styles.detailsHeaderText, styles.colDate]}>תאריך</Text>
+            <Text style={[styles.detailsHeaderText, styles.colPayment]}>אמצעי תשלום</Text>
+            <Text style={[styles.detailsHeaderText, styles.colAmount]}>סכום</Text>
           </View>
           
-          <View style={styles.tableRow}>
-            <Text style={[styles.tableCell, styles.col1]}>
-              {currencySymbol}{formatNumber(receipt.amount)}
-            </Text>
-            <Text style={[styles.tableCell, styles.col2]}>
-              {receipt.paymentMethod || '-'}
-            </Text>
-            <Text style={[styles.tableCell, styles.col3]}>
-              {formattedDate}
-            </Text>
-            <Text style={[styles.tableCell, styles.col4]}>
-              {receipt.description || 'תשלום'}
-            </Text>
+          <View style={styles.detailsRow}>
+            <Text style={[styles.detailsCell, styles.colDesc]}>{receipt.description || 'תשלום'}</Text>
+            <Text style={[styles.detailsCell, styles.colDate]}>{formattedDate}</Text>
+            <Text style={[styles.detailsCell, styles.colPayment]}>{receipt.paymentMethod || '-'}</Text>
+            <Text style={[styles.detailsCell, styles.colAmount]}>{currencySymbol}{formatNumber(receipt.amount)}</Text>
           </View>
         </View>
 
         {/* Total */}
         <View style={styles.totalSection}>
-          <Text style={styles.totalLabel}>סה״כ שולם</Text>
-          <Text style={styles.totalAmount}>
-            {currencySymbol}{formatNumber(receipt.amount)}
-          </Text>
+          <View style={styles.totalBox}>
+            <Text style={styles.totalLabel}>סה"כ שולם</Text>
+            <Text style={styles.totalAmount}>{currencySymbol}{formatNumber(receipt.amount)}</Text>
+          </View>
         </View>
 
         {/* Notes */}
@@ -422,17 +376,13 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
 
         {/* Footer */}
         <View style={styles.footer}>
-          <View style={styles.footerRow}>
-            <View>
-              <Text style={styles.footerText}>
-                {businessInfo.vatExempt ? 'פטור מגביית מע"מ עפ"י סעיף 31 לחוק' : ''}
-              </Text>
-              <Text style={styles.footerText}>תאריך הפקה: {formatTodayDate()}</Text>
-            </View>
-            <View>
-              <Text style={styles.signatureText}>מסמך ממוחשב - חתום דיגיטלית</Text>
-              <Text style={styles.footerText}>הופק על ידי קבליט</Text>
-            </View>
+          <View>
+            {businessInfo.vatExempt && <Text style={styles.footerText}>פטור מגביית מע"מ עפ"י סעיף 31 לחוק</Text>}
+            <Text style={styles.footerText}>תאריך הפקה: {formatTodayDate()}</Text>
+          </View>
+          <View>
+            <Text style={styles.footerSignature}>מסמך ממוחשב - חתום דיגיטלית</Text>
+            <Text style={styles.footerText}>הופק על ידי קבליט</Text>
           </View>
         </View>
       </Page>
@@ -448,28 +398,22 @@ export async function generateSinglePdf(
   settings: ReceiptSettings,
   template: ReceiptTemplate = 'classic'
 ): Promise<Blob> {
-  console.log(`[PDF] Generating receipt ${receipt.receiptNumber} for ${receipt.customerName}...`);
+  console.log(`[PDF] Generating receipt ${receipt.receiptNumber} for ${receipt.customerName}`);
   
-  try {
-    const doc = (
-      <ReceiptDocument
-        receipt={receipt}
-        businessInfo={businessInfo}
-        settings={settings}
-        template={template}
-      />
-    );
-    
-    const blob = await pdf(doc).toBlob();
-    console.log(`[PDF] Success - size: ${blob.size} bytes`);
-    return blob;
-  } catch (error) {
-    console.error(`[PDF] Error:`, error);
-    throw error;
-  }
+  const doc = (
+    <ReceiptDocument
+      receipt={receipt}
+      businessInfo={businessInfo}
+      settings={settings}
+      template={template}
+    />
+  );
+  
+  const blob = await pdf(doc).toBlob();
+  console.log(`[PDF] Success - size: ${blob.size} bytes`);
+  return blob;
 }
 
-// Interface for extracted receipts from AI
 interface ExtractedReceipt {
   customerName: string;
   amount: number;
@@ -495,16 +439,14 @@ function parseReceiptDate(dateStr: string | Date | null | undefined): Date {
   const ddmmyyyy = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
   if (ddmmyyyy) {
     const [, day, month, year] = ddmmyyyy;
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    if (!isNaN(date.getTime())) return date;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
   }
   
   // YYYY-MM-DD
   const yyyymmdd = str.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
   if (yyyymmdd) {
     const [, year, month, day] = yyyymmdd;
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    if (!isNaN(date.getTime())) return date;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
   }
   
   // DD/MM/YY
@@ -512,15 +454,11 @@ function parseReceiptDate(dateStr: string | Date | null | undefined): Date {
   if (ddmmyy) {
     const [, day, month, year] = ddmmyy;
     const fullYear = parseInt(year) > 50 ? 1900 + parseInt(year) : 2000 + parseInt(year);
-    const date = new Date(fullYear, parseInt(month) - 1, parseInt(day));
-    if (!isNaN(date.getTime())) return date;
+    return new Date(fullYear, parseInt(month) - 1, parseInt(day));
   }
   
-  // Try native parsing
   const parsed = new Date(str);
-  if (!isNaN(parsed.getTime())) return parsed;
-  
-  return new Date();
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
 }
 
 export async function createZipWithReceipts(
@@ -530,7 +468,7 @@ export async function createZipWithReceipts(
   onProgress?: (progress: number) => void,
   template: ReceiptTemplate = 'classic'
 ): Promise<Blob> {
-  console.log(`[ZIP] Starting generation for ${extractedReceipts.length} receipts`);
+  console.log(`[ZIP] Starting generation for ${extractedReceipts?.length || 0} receipts`);
   
   if (!extractedReceipts || extractedReceipts.length === 0) {
     throw new Error('לא נמצאו קבלות לייצור');
@@ -540,52 +478,48 @@ export async function createZipWithReceipts(
   const total = extractedReceipts.length;
   let successCount = 0;
   
-  for (let i = 0; i < extractedReceipts.length; i++) {
+  for (let i = 0; i < total; i++) {
     const extracted = extractedReceipts[i];
-    const receiptNumber = settings.startingNumber + i;
+    const receiptNumber = (settings.startingNumber || 1) + i;
     
     console.log(`[ZIP] Processing ${i + 1}/${total}: ${extracted.customerName || 'Unknown'}`);
     
-    const receiptData: ReceiptData = {
-      id: `receipt-${receiptNumber}-${Date.now()}`,
-      receiptNumber,
-      customerName: extracted.customerName || 'לקוח',
-      amount: typeof extracted.amount === 'number' ? extracted.amount : parseFloat(String(extracted.amount)) || 0,
-      date: parseReceiptDate(extracted.date),
-      description: extracted.description || '',
-      paymentMethod: extracted.paymentMethod || '',
-      notes: extracted.notes || '',
-      status: 'generated',
-    };
-    
     try {
+      const receiptData: ReceiptData = {
+        id: `receipt-${receiptNumber}-${Date.now()}`,
+        receiptNumber,
+        customerName: extracted.customerName || 'לקוח',
+        amount: typeof extracted.amount === 'number' ? extracted.amount : parseFloat(String(extracted.amount)) || 0,
+        date: parseReceiptDate(extracted.date),
+        description: extracted.description || '',
+        paymentMethod: extracted.paymentMethod || '',
+        notes: extracted.notes || '',
+        status: 'generated',
+      };
+      
       const pdfBlob = await generateSinglePdf(receiptData, businessInfo, settings, template);
       
       if (pdfBlob && pdfBlob.size > 100) {
-        // Create safe filename
         const safeName = (extracted.customerName || 'receipt')
           .replace(/[^א-תa-zA-Z0-9\s]/g, '')
           .replace(/\s+/g, '_')
           .substring(0, 30) || 'receipt';
         
         const filename = `kabala_${receiptNumber}_${safeName}.pdf`;
-        
         const arrayBuffer = await pdfBlob.arrayBuffer();
         zip.file(filename, arrayBuffer);
         
         successCount++;
-        console.log(`[ZIP] Added: ${filename} (${pdfBlob.size} bytes)`);
+        console.log(`[ZIP] Added: ${filename}`);
       }
-    } catch (error) {
-      console.error(`[ZIP] Error for receipt ${receiptNumber}:`, error);
+    } catch (err) {
+      console.error(`[ZIP] Error for receipt ${receiptNumber}:`, err);
     }
     
-    // Update progress
     const progress = Math.round(((i + 1) / total) * 100);
     onProgress?.(progress);
     
-    // Small delay between PDFs
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 50));
   }
   
   console.log(`[ZIP] Complete: ${successCount}/${total} receipts`);
@@ -601,7 +535,6 @@ export async function createZipWithReceipts(
   });
   
   console.log(`[ZIP] Final size: ${zipBlob.size} bytes`);
-  
   return zipBlob;
 }
 
