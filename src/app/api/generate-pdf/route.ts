@@ -57,7 +57,7 @@ function generateReceiptHTML(data: RequestBody): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -70,63 +70,85 @@ function generateReceiptHTML(data: RequestBody): string {
       direction: rtl;
       text-align: right;
       background: #ffffff;
-      color: #333333;
-      padding: 40px;
-      font-size: 14px;
+      color: #333;
+      padding: 30px 40px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    
+    .receipt {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    
+    /* Header - Two columns */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #1a365d;
+    }
+    
+    .customer-info {
+      text-align: right;
+    }
+    
+    .customer-label {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 3px;
+    }
+    
+    .customer-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a365d;
+    }
+    
+    .customer-details {
+      font-size: 11px;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .business-info {
+      text-align: left;
+      font-size: 11px;
+      color: #555;
       line-height: 1.6;
     }
     
-    .receipt-container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: #ffffff;
-    }
-    
-    .header {
-      padding-bottom: 25px;
-      border-bottom: 3px solid #1a365d;
-      margin-bottom: 30px;
-    }
-    
     .business-name {
-      font-size: 28px;
-      font-weight: 700;
-      color: #1a365d;
-      margin-bottom: 10px;
-    }
-    
-    .business-details {
-      font-size: 12px;
-      color: #666666;
-      line-height: 1.8;
-    }
-    
-    .receipt-title-box {
-      background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
-      color: #ffffff;
-      text-align: center;
-      padding: 20px;
-      margin-bottom: 30px;
-      border-radius: 8px;
-    }
-    
-    .receipt-title {
-      font-size: 26px;
-      font-weight: 700;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
       margin-bottom: 5px;
     }
     
-    .receipt-number {
-      font-size: 16px;
-      opacity: 0.9;
+    /* Receipt Title */
+    .receipt-title-row {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
     }
     
-    .info-row {
+    .receipt-badge {
+      background: #1a365d;
+      color: white;
+      padding: 8px 30px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    /* Info Section */
+    .info-section {
       display: flex;
       justify-content: space-between;
       margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 1px solid #eeeeee;
+      font-size: 11px;
     }
     
     .info-item {
@@ -134,197 +156,200 @@ function generateReceiptHTML(data: RequestBody): string {
     }
     
     .info-label {
-      font-size: 11px;
-      color: #888888;
-      margin-bottom: 3px;
+      color: #888;
+      margin-bottom: 2px;
     }
     
     .info-value {
-      font-size: 14px;
-      color: #333333;
+      color: #333;
       font-weight: 500;
     }
     
-    .customer-box {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 25px;
-      border-right: 4px solid #1a365d;
+    /* Table */
+    .table-section {
+      margin-bottom: 15px;
     }
     
-    .customer-label {
-      font-size: 11px;
-      color: #888888;
-      margin-bottom: 5px;
+    .section-title {
+      background: #1a365d;
+      color: white;
+      padding: 8px 15px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 4px 4px 0 0;
+      display: inline-block;
     }
     
-    .customer-name {
-      font-size: 20px;
-      font-weight: 700;
-      color: #1a365d;
-    }
-    
-    .details-table {
+    table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 25px;
+      border: 1px solid #ddd;
+      font-size: 11px;
     }
     
-    .details-table th {
-      background: #1a365d;
-      color: #ffffff;
-      padding: 12px 15px;
+    th {
+      background: #f5f5f5;
+      padding: 10px 12px;
+      text-align: center;
       font-weight: 500;
-      font-size: 12px;
-      text-align: center;
+      color: #333;
+      border-bottom: 1px solid #ddd;
     }
     
-    .details-table td {
-      padding: 15px;
+    td {
+      padding: 12px;
       text-align: center;
-      border-bottom: 1px solid #eeeeee;
-      font-size: 13px;
+      border-bottom: 1px solid #eee;
+      color: #444;
     }
     
-    .total-section {
+    /* Total Row */
+    .total-row {
       display: flex;
-      justify-content: flex-start;
-      margin-bottom: 30px;
-    }
-    
-    .total-box {
-      background: linear-gradient(135deg, #38a169 0%, #48bb78 100%);
-      color: #ffffff;
-      padding: 20px 40px;
-      border-radius: 8px;
-      text-align: center;
+      align-items: center;
+      margin-top: -1px;
     }
     
     .total-label {
+      background: #1a365d;
+      color: white;
+      padding: 10px 20px;
       font-size: 12px;
-      opacity: 0.9;
-      margin-bottom: 5px;
+      font-weight: 500;
     }
     
     .total-amount {
-      font-size: 28px;
+      background: #f0f0f0;
+      padding: 10px 20px;
+      font-size: 14px;
       font-weight: 700;
+      color: #1a365d;
+      border: 1px solid #ddd;
+      border-right: none;
     }
     
-    .notes-box {
-      background: #fff9e6;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 25px;
-      border-right: 4px solid #f6ad55;
+    /* Notes */
+    .notes-section {
+      margin-top: 15px;
+      padding: 10px 15px;
+      background: #fafafa;
+      border-radius: 4px;
+      font-size: 11px;
     }
     
     .notes-label {
-      font-size: 11px;
-      color: #888888;
+      font-weight: 500;
+      color: #666;
       margin-bottom: 5px;
     }
     
     .notes-text {
-      font-size: 13px;
-      color: #666666;
+      color: #555;
     }
     
+    /* Footer */
     .footer {
-      border-top: 1px solid #dddddd;
-      padding-top: 20px;
+      margin-top: 40px;
+      padding-top: 15px;
+      border-top: 1px solid #ddd;
       display: flex;
       justify-content: space-between;
-      font-size: 10px;
-      color: #888888;
+      font-size: 9px;
+      color: #888;
     }
     
-    .signature-box {
+    .footer-right {
+      text-align: right;
+    }
+    
+    .footer-left {
       text-align: left;
     }
     
-    .signature-text {
+    .digital-signature {
       font-weight: 600;
       color: #1a365d;
-      font-size: 11px;
+      font-size: 10px;
     }
   </style>
 </head>
 <body>
-  <div class="receipt-container">
+  <div class="receipt">
+    <!-- Header: Customer (right) | Business (left) -->
     <div class="header">
-      <div class="business-name">${businessInfo.name || 'שם העסק'}</div>
-      <div class="business-details">
-        ${getBusinessTypeHebrew(businessInfo.businessType)} | ח.פ/ע.מ: ${businessInfo.businessId || '000000000'}<br>
-        ${businessInfo.address ? businessInfo.address + '<br>' : ''}
+      <div class="customer-info">
+        <div class="customer-label">לכבוד:</div>
+        <div class="customer-name">${receipt.customerName || 'לקוח'}</div>
+        <div class="customer-details">
+          טלפון: -<br>
+          ת.ז / ח.פ: -
+        </div>
+      </div>
+      <div class="business-info">
+        <div class="business-name">${businessInfo.name || 'שם העסק'}</div>
+        ${getBusinessTypeHebrew(businessInfo.businessType)} ${businessInfo.businessId || ''}<br>
+        ${businessInfo.address ? 'כתובת: ' + businessInfo.address + '<br>' : ''}
         ${businessInfo.phone ? 'טלפון: ' + businessInfo.phone + '<br>' : ''}
-        ${businessInfo.email ? businessInfo.email : ''}
+        ${businessInfo.email || ''}
       </div>
     </div>
     
-    <div class="receipt-title-box">
-      <div class="receipt-title">קבלה</div>
-      <div class="receipt-number">מספר: ${receipt.receiptNumber}</div>
+    <!-- Receipt Title -->
+    <div class="receipt-title-row">
+      <div class="receipt-badge">קבלה ${receipt.receiptNumber}</div>
     </div>
     
-    <div class="info-row">
+    <!-- Info Row -->
+    <div class="info-section">
       <div class="info-item">
-        <div class="info-label">תאריך</div>
+        <div class="info-label">העתק נאמן למקור</div>
         <div class="info-value">${receipt.date || getTodayDate()}</div>
       </div>
-      <div class="info-item">
-        <div class="info-label">מספר קבלה</div>
-        <div class="info-value">${receipt.receiptNumber}</div>
-      </div>
     </div>
     
-    <div class="customer-box">
-      <div class="customer-label">התקבל מאת</div>
-      <div class="customer-name">${receipt.customerName || 'לקוח'}</div>
-    </div>
-    
-    <table class="details-table">
-      <thead>
-        <tr>
-          <th>פירוט</th>
-          <th>תאריך</th>
-          <th>אמצעי תשלום</th>
-          <th>סכום</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>${receipt.description || 'תשלום'}</td>
-          <td>${receipt.date || getTodayDate()}</td>
-          <td>${receipt.paymentMethod || '-'}</td>
-          <td>${currencySymbol}${formatAmount(receipt.amount)}</td>
-        </tr>
-      </tbody>
-    </table>
-    
-    <div class="total-section">
-      <div class="total-box">
+    <!-- Payment Details Table -->
+    <div class="table-section">
+      <div class="section-title">פרטי תשלומים</div>
+      <table>
+        <thead>
+          <tr>
+            <th>סוג תשלום</th>
+            <th>פרטים</th>
+            <th>תאריך</th>
+            <th>סה״כ(${currencySymbol})</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>${receipt.paymentMethod || 'מזומן'}</td>
+            <td>${receipt.description || 'תשלום'}</td>
+            <td>${receipt.date || getTodayDate()}</td>
+            <td>${formatAmount(receipt.amount)}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="total-row">
         <div class="total-label">סה״כ שולם</div>
         <div class="total-amount">${currencySymbol}${formatAmount(receipt.amount)}</div>
       </div>
     </div>
     
     ${receipt.notes ? `
-    <div class="notes-box">
-      <div class="notes-label">הערות</div>
+    <div class="notes-section">
+      <div class="notes-label">הערות:</div>
       <div class="notes-text">${receipt.notes}</div>
     </div>
     ` : ''}
     
+    <!-- Footer -->
     <div class="footer">
-      <div>
+      <div class="footer-right">
+        <div class="digital-signature">מסמך ממוחשב חתום דיגיטלית</div>
+        <div>הופק ע״י קבליט - הנה״ח דיגיטלית</div>
+      </div>
+      <div class="footer-left">
         <div>תאריך הפקה: ${getTodayDate()}</div>
         ${businessInfo.vatExempt ? '<div>פטור ממע״מ עפ״י סעיף 31 לחוק</div>' : ''}
-      </div>
-      <div class="signature-box">
-        <div class="signature-text">מסמך ממוחשב - חתום דיגיטלית</div>
-        <div>הופק על ידי קבליט</div>
       </div>
     </div>
   </div>
