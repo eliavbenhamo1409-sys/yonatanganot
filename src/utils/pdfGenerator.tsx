@@ -7,18 +7,38 @@ import {
   Text,
   View,
   StyleSheet,
+  Font,
   pdf,
 } from '@react-pdf/renderer';
 import { BusinessInfo, ReceiptData, ReceiptSettings } from '@/types';
 import JSZip from 'jszip';
 
-// Simple styles - no custom fonts, using default
+// Register Hebrew font from Google Fonts (static URL that works)
+Font.register({
+  family: 'Heebo',
+  src: 'https://fonts.gstatic.com/s/heebo/v22/NGSpv5_NC0k9P_v6ZUCbLRAHxK1EiSysd0mm.ttf',
+  fontWeight: 400,
+});
+
+Font.register({
+  family: 'Heebo',
+  src: 'https://fonts.gstatic.com/s/heebo/v22/NGSpv5_NC0k9P_v6ZUCbLRAHxK1ECSysd0mm.ttf',
+  fontWeight: 700,
+});
+
+// Disable hyphenation
+Font.registerHyphenationCallback((word) => [word]);
+
+export type ReceiptTemplate = 'classic' | 'modern' | 'minimal';
+
+// Styles with Hebrew font
 const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
     backgroundColor: '#ffffff',
     padding: 40,
     fontSize: 12,
+    fontFamily: 'Heebo',
   },
   header: {
     marginBottom: 30,
@@ -29,13 +49,16 @@ const styles = StyleSheet.create({
   },
   businessName: {
     fontSize: 24,
+    fontWeight: 700,
     color: '#1a365d',
     marginBottom: 8,
+    textAlign: 'right',
   },
   businessDetail: {
     fontSize: 10,
     color: '#666666',
     marginBottom: 4,
+    textAlign: 'right',
   },
   receiptHeader: {
     marginTop: 20,
@@ -45,11 +68,12 @@ const styles = StyleSheet.create({
   },
   receiptTitle: {
     fontSize: 22,
+    fontWeight: 700,
     color: '#ffffff',
     textAlign: 'center',
   },
   infoRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     marginBottom: 15,
     paddingBottom: 10,
@@ -60,10 +84,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 10,
     color: '#888888',
+    textAlign: 'right',
   },
   value: {
     fontSize: 12,
     color: '#333333',
+    textAlign: 'right',
   },
   customerBox: {
     backgroundColor: '#f5f5f5',
@@ -74,10 +100,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#888888',
     marginBottom: 5,
+    textAlign: 'right',
   },
   customerName: {
     fontSize: 16,
+    fontWeight: 700,
     color: '#333333',
+    textAlign: 'right',
   },
   tableContainer: {
     marginBottom: 20,
@@ -86,18 +115,19 @@ const styles = StyleSheet.create({
     borderStyle: 'solid',
   },
   tableHeader: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     backgroundColor: '#1a365d',
     padding: 10,
   },
   tableHeaderCell: {
     color: '#ffffff',
     fontSize: 10,
+    fontWeight: 700,
     flex: 1,
     textAlign: 'center',
   },
   tableRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#eeeeee',
@@ -111,7 +141,7 @@ const styles = StyleSheet.create({
   },
   totalContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     marginBottom: 30,
   },
   totalBox: {
@@ -123,9 +153,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#ffffff',
     marginBottom: 5,
+    textAlign: 'center',
   },
   totalAmount: {
     fontSize: 20,
+    fontWeight: 700,
     color: '#ffffff',
     textAlign: 'center',
   },
@@ -138,10 +170,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#888888',
     marginBottom: 5,
+    textAlign: 'right',
   },
   notesText: {
     fontSize: 10,
     color: '#666666',
+    textAlign: 'right',
   },
   footer: {
     position: 'absolute',
@@ -152,16 +186,15 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#dddddd',
     borderTopStyle: 'solid',
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
   },
   footerText: {
     fontSize: 8,
     color: '#888888',
+    textAlign: 'right',
   },
 });
-
-export type ReceiptTemplate = 'classic' | 'modern' | 'minimal';
 
 // Helper functions
 const formatAmount = (num: number): string => {
@@ -189,10 +222,7 @@ const formatDate = (date: Date | string | null | undefined): string => {
     
     if (isNaN(d.getTime())) return getTodayDate();
     
-    const day = d.getDate().toString().padStart(2, '0');
-    const month = (d.getMonth() + 1).toString().padStart(2, '0');
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
+    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
   } catch {
     return getTodayDate();
   }
@@ -205,11 +235,11 @@ const getTodayDate = (): string => {
 
 const getBusinessType = (type: string): string => {
   const types: Record<string, string> = {
-    'osek_patur': 'Osek Patur',
-    'osek_morshe': 'Osek Murshe',
-    'company': 'Company',
+    'osek_patur': 'עוסק פטור',
+    'osek_morshe': 'עוסק מורשה',
+    'company': 'חברה בע"מ',
   };
-  return types[type] || 'Business';
+  return types[type] || 'עסק';
 };
 
 // Receipt Document Component
@@ -220,7 +250,7 @@ interface ReceiptDocProps {
 }
 
 const ReceiptDoc: React.FC<ReceiptDocProps> = ({ receipt, businessInfo, settings }) => {
-  const currency = settings.currencySymbol || 'ILS';
+  const currency = settings.currencySymbol || '₪';
   const dateStr = formatDate(receipt.date);
 
   return (
@@ -228,66 +258,66 @@ const ReceiptDoc: React.FC<ReceiptDocProps> = ({ receipt, businessInfo, settings
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.businessName}>{businessInfo.name || 'Business Name'}</Text>
+          <Text style={styles.businessName}>{businessInfo.name || 'שם העסק'}</Text>
           <Text style={styles.businessDetail}>
-            {getBusinessType(businessInfo.businessType)} | ID: {businessInfo.businessId || '000000000'}
+            {getBusinessType(businessInfo.businessType)} | ח.פ: {businessInfo.businessId || '000000000'}
           </Text>
           {businessInfo.address && <Text style={styles.businessDetail}>{businessInfo.address}</Text>}
-          {businessInfo.phone && <Text style={styles.businessDetail}>Tel: {businessInfo.phone}</Text>}
+          {businessInfo.phone && <Text style={styles.businessDetail}>טלפון: {businessInfo.phone}</Text>}
           {businessInfo.email && <Text style={styles.businessDetail}>{businessInfo.email}</Text>}
         </View>
 
         {/* Receipt Title */}
         <View style={styles.receiptHeader}>
-          <Text style={styles.receiptTitle}>RECEIPT #{receipt.receiptNumber}</Text>
+          <Text style={styles.receiptTitle}>קבלה מספר {receipt.receiptNumber}</Text>
         </View>
 
         {/* Info */}
         <View style={styles.infoRow}>
           <View>
-            <Text style={styles.label}>Date:</Text>
+            <Text style={styles.label}>תאריך</Text>
             <Text style={styles.value}>{dateStr}</Text>
           </View>
           <View>
-            <Text style={styles.label}>Receipt Number:</Text>
+            <Text style={styles.label}>מספר קבלה</Text>
             <Text style={styles.value}>{receipt.receiptNumber}</Text>
           </View>
         </View>
 
         {/* Customer */}
         <View style={styles.customerBox}>
-          <Text style={styles.customerLabel}>Received From:</Text>
-          <Text style={styles.customerName}>{receipt.customerName || 'Customer'}</Text>
+          <Text style={styles.customerLabel}>התקבל מאת</Text>
+          <Text style={styles.customerName}>{receipt.customerName || 'לקוח'}</Text>
         </View>
 
         {/* Details Table */}
         <View style={styles.tableContainer}>
           <View style={styles.tableHeader}>
-            <Text style={styles.tableHeaderCell}>Description</Text>
-            <Text style={styles.tableHeaderCell}>Date</Text>
-            <Text style={styles.tableHeaderCell}>Payment</Text>
-            <Text style={styles.tableHeaderCell}>Amount</Text>
+            <Text style={styles.tableHeaderCell}>סכום</Text>
+            <Text style={styles.tableHeaderCell}>אמצעי תשלום</Text>
+            <Text style={styles.tableHeaderCell}>תאריך</Text>
+            <Text style={styles.tableHeaderCell}>פירוט</Text>
           </View>
           <View style={styles.tableRow}>
-            <Text style={styles.tableCell}>{receipt.description || 'Payment'}</Text>
-            <Text style={styles.tableCell}>{dateStr}</Text>
+            <Text style={styles.tableCell}>{currency}{formatAmount(receipt.amount)}</Text>
             <Text style={styles.tableCell}>{receipt.paymentMethod || '-'}</Text>
-            <Text style={styles.tableCell}>{currency} {formatAmount(receipt.amount)}</Text>
+            <Text style={styles.tableCell}>{dateStr}</Text>
+            <Text style={styles.tableCell}>{receipt.description || 'תשלום'}</Text>
           </View>
         </View>
 
         {/* Total */}
         <View style={styles.totalContainer}>
           <View style={styles.totalBox}>
-            <Text style={styles.totalLabel}>Total Paid</Text>
-            <Text style={styles.totalAmount}>{currency} {formatAmount(receipt.amount)}</Text>
+            <Text style={styles.totalLabel}>סה״כ שולם</Text>
+            <Text style={styles.totalAmount}>{currency}{formatAmount(receipt.amount)}</Text>
           </View>
         </View>
 
         {/* Notes */}
         {receipt.notes && (
           <View style={styles.notesBox}>
-            <Text style={styles.notesLabel}>Notes:</Text>
+            <Text style={styles.notesLabel}>הערות</Text>
             <Text style={styles.notesText}>{receipt.notes}</Text>
           </View>
         )}
@@ -295,12 +325,12 @@ const ReceiptDoc: React.FC<ReceiptDocProps> = ({ receipt, businessInfo, settings
         {/* Footer */}
         <View style={styles.footer}>
           <View>
-            <Text style={styles.footerText}>Generated: {getTodayDate()}</Text>
-            {businessInfo.vatExempt && <Text style={styles.footerText}>VAT Exempt</Text>}
+            <Text style={styles.footerText}>תאריך הפקה: {getTodayDate()}</Text>
+            {businessInfo.vatExempt && <Text style={styles.footerText}>פטור ממע״מ עפ״י סעיף 31 לחוק</Text>}
           </View>
           <View>
-            <Text style={styles.footerText}>Digital Document - Electronically Signed</Text>
-            <Text style={styles.footerText}>Powered by Kablit</Text>
+            <Text style={styles.footerText}>מסמך ממוחשב - חתום דיגיטלית</Text>
+            <Text style={styles.footerText}>הופק על ידי קבליט</Text>
           </View>
         </View>
       </Page>
@@ -323,7 +353,7 @@ export async function generateSinglePdf(
     console.log(`[PDF] Created, size: ${blob.size}`);
     return blob;
   } catch (error) {
-    console.error('[PDF] Generation error:', error);
+    console.error('[PDF] Error:', error);
     throw new Error('Failed to generate PDF');
   }
 }
@@ -348,19 +378,12 @@ function parseDate(dateStr: string | Date | null | undefined): Date {
   
   const str = String(dateStr).trim();
   
-  // DD/MM/YYYY
   const match1 = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
-  if (match1) {
-    return new Date(parseInt(match1[3]), parseInt(match1[2]) - 1, parseInt(match1[1]));
-  }
+  if (match1) return new Date(parseInt(match1[3]), parseInt(match1[2]) - 1, parseInt(match1[1]));
   
-  // YYYY-MM-DD
   const match2 = str.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
-  if (match2) {
-    return new Date(parseInt(match2[1]), parseInt(match2[2]) - 1, parseInt(match2[3]));
-  }
+  if (match2) return new Date(parseInt(match2[1]), parseInt(match2[2]) - 1, parseInt(match2[3]));
   
-  // DD/MM/YY
   const match3 = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/);
   if (match3) {
     const year = parseInt(match3[3]) > 50 ? 1900 + parseInt(match3[3]) : 2000 + parseInt(match3[3]);
@@ -382,7 +405,7 @@ export async function createZipWithReceipts(
   console.log(`[ZIP] Starting with ${extractedReceipts?.length || 0} receipts`);
   
   if (!extractedReceipts || extractedReceipts.length === 0) {
-    throw new Error('No receipts to generate');
+    throw new Error('לא נמצאו קבלות לייצור');
   }
   
   const zip = new JSZip();
@@ -399,7 +422,7 @@ export async function createZipWithReceipts(
       const receiptData: ReceiptData = {
         id: `r-${num}-${Date.now()}`,
         receiptNumber: num,
-        customerName: item.customerName || 'Customer',
+        customerName: item.customerName || 'לקוח',
         amount: typeof item.amount === 'number' ? item.amount : parseFloat(String(item.amount)) || 0,
         date: parseDate(item.date),
         description: item.description || '',
@@ -412,11 +435,11 @@ export async function createZipWithReceipts(
       
       if (pdfBlob && pdfBlob.size > 100) {
         const name = (item.customerName || 'receipt')
-          .replace(/[^a-zA-Z0-9\s]/g, '')
+          .replace(/[^א-תa-zA-Z0-9\s]/g, '')
           .replace(/\s+/g, '_')
           .substring(0, 20) || 'receipt';
         
-        const filename = `receipt_${num}_${name}.pdf`;
+        const filename = `kabala_${num}_${name}.pdf`;
         const buffer = await pdfBlob.arrayBuffer();
         zip.file(filename, buffer);
         success++;
@@ -433,7 +456,7 @@ export async function createZipWithReceipts(
   console.log(`[ZIP] Done: ${success}/${total}`);
   
   if (success === 0) {
-    throw new Error('Failed to generate any receipts');
+    throw new Error('לא נוצרו קבלות. בדוק את הנתונים ונסה שוב.');
   }
   
   const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
@@ -451,7 +474,7 @@ export async function generateReceiptPDF(
   const receiptData: ReceiptData = {
     id: `r-${receiptNumber}`,
     receiptNumber,
-    customerName: extracted.customerName || 'Customer',
+    customerName: extracted.customerName || 'לקוח',
     amount: extracted.amount || 0,
     date: parseDate(extracted.date),
     description: extracted.description || '',
