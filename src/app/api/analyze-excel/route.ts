@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI only when API is called, not at build time
+function getOpenAIClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not configured');
+  }
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 export interface ExtractedReceipt {
   customerName: string;
@@ -90,6 +96,7 @@ ${JSON.stringify(rows.slice(0, 200), null, 2)}
 7. זהה שם לקוח גם אם הוא בעמודה לא צפויה
 8. החזר רק JSON תקין, ללא טקסט נוסף`;
 
+    const openai = getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
