@@ -1,196 +1,308 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyBS2uNo-oOvINIBfT3p8xcwsv-hIZYuG6w';
-
 interface ExtractedRow {
   customerName: string;
   date: string;
   rowIndex: number;
 }
 
-// Common column name patterns
-const NAME_PATTERNS = ['שם', 'שם לקוח', 'לקוח', 'שם הלקוח', 'name', 'customer', 'client', 'שם מלא'];
-const DATE_PATTERNS = ['תאריך', 'date', 'תאריך תשלום', 'תאריך קבלה', 'יום', 'תאריך עסקה'];
-
-function findColumnByPattern(headers: string[], patterns: string[]): string | null {
-  // First try exact match
-  for (const pattern of patterns) {
-    const found = headers.find(h => h.toLowerCase().trim() === pattern.toLowerCase());
-    if (found) return found;
-  }
-  // Then try contains
-  for (const pattern of patterns) {
-    const found = headers.find(h => h.toLowerCase().includes(pattern.toLowerCase()));
-    if (found) return found;
-  }
-  return null;
+interface ColumnMapping {
+  customerName: string | null;
+  date: string | null;
 }
 
-function formatDate(rawDate: any): string {
-  if (!rawDate) return '';
-  
-  // If it's a number (Excel serial date)
-  if (typeof rawDate === 'number') {
-    const excelDate = new Date((rawDate - 25569) * 86400 * 1000);
-    return `${excelDate.getDate().toString().padStart(2, '0')}/${(excelDate.getMonth() + 1).toString().padStart(2, '0')}/${excelDate.getFullYear()}`;
-  }
-  
-  // If it's already a string
-  const dateStr = String(rawDate).trim();
-  
-  // Try to parse various date formats
-  // Check if it's already in DD/MM/YYYY format
-  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(dateStr)) {
-    return dateStr;
-  }
-  
-  // Check if it's in YYYY-MM-DD format
-  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-    const parts = dateStr.split('-');
-    return `${parts[2].substring(0, 2)}/${parts[1]}/${parts[0]}`;
-  }
-  
-  return dateStr;
+// ==================== COLUMN DETECTION (from analyze-excel) ====================
+
+function normalizeText(text: string): string {
+  return String(text || '').toLowerCase().trim()
+    .replace(/[\s_-]+/g, ' ')
+    .replace(/['"״׳]/g, '');
 }
+
+function detectColumnMapping(headers: string[], rows: any[]): ColumnMapping {
+  const mapping: ColumnMapping = {
+    customerName: null,
+    date: null,
+  };
+
+  const normalizedHeaders = headers.map(h => normalizeText(h));
+
+  // Keywords for each field (Hebrew and English)
+  const nameKeywords = ['שם', 'לקוח', 'לקוחה', 'שם לקוח', 'customer', 'name', 'client', 'מקבל', 'משלם', 'קונה', 'רוכש', 'חברה', 'עסק', 'שם מלא'];
+  const dateKeywords = ['תאריך', 'date', 'יום', 'מועד', 'תאריך תשלום', 'תאריך עסקה', 'when', 'תאריך קבלה'];
+
+  // First pass: exact and partial matches on headers
+  for (let i = 0; i < normalizedHeaders.length; i++) {
+    const header = normalizedHeaders[i];
+    const originalHeader = headers[i];
+    
+    // Check for name column
+    if (!mapping.customerName) {
+      for (const keyword of nameKeywords) {
+        if (header === keyword || header.includes(keyword) || keyword.includes(header)) {
+          mapping.customerName = originalHeader;
+          break;
+        }
+      }
+    }
+    
+    // Check for date column
+    if (!mapping.date) {
+      for (const keyword of dateKeywords) {
+        if (header === keyword || header.includes(keyword) || keyword.includes(header)) {
+          mapping.date = originalHeader;
+          break;
+        }
+      }
+    }
+  }
+
+  // Second pass: detect by data analysis if still not found
+  if (!mapping.date || !mapping.customerName) {
+    const sampleRows = rows.slice(0, Math.min(10, rows.length));
+    
+    for (let i = 0; i < headers.length; i++) {
+      const header = headers[i];
+      const values = sampleRows.map(r => r[header]).filter(v => v != null && v !== '');
+      
+      if (values.length === 0) continue;
+
+      // Detect date column by date-like values
+      if (!mapping.date) {
+        const dateCount = values.filter(v => isDateValue(v)).length;
+        if (dateCount >= values.length * 0.5) {
+          mapping.date = header;
+        }
+      }
+
+      // Detect customer name by text values (not numbers, not dates)
+      if (!mapping.customerName) {
+        const textCount = values.filter(v => isTextValue(v) && !isDateValue(v) && !isNumericValue(v)).length;
+        if (textCount >= values.length * 0.5) {
+          mapping.customerName = header;
+        }
+      }
+    }
+  }
+
+  return mapping;
+}
+
+// ==================== VALUE TYPE DETECTION ====================
+
+function isNumericValue(value: any): boolean {
+  if (value === null || value === undefined || value === '') return false;
+  
+  if (typeof value === 'number') return !isNaN(value);
+  
+  const str = String(value).trim();
+  const cleaned = str.replace(/[₪$€,\s]/g, '').replace(/[,]/g, '.');
+  
+  return !isNaN(parseFloat(cleaned)) && parseFloat(cleaned) !== 0;
+}
+
+function isDateValue(value: any): boolean {
+  if (value === null || value === undefined || value === '') return false;
+  
+  if (value instanceof Date) return !isNaN(value.getTime());
+  
+  // Excel serial date
+  if (typeof value === 'number') {
+    if (value > 25000 && value < 100000) return true;
+  }
+  
+  const str = String(value).trim();
+  
+  // Date patterns
+  const datePatterns = [
+    /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4}$/,
+    /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2}$/,
+    /^\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}$/,
+    /^\d{1,2}\s*[\/\-\.]\s*\d{1,2}\s*[\/\-\.]\s*\d{2,4}$/,
+    /^\d{8}$/,
+  ];
+  
+  for (const pattern of datePatterns) {
+    if (pattern.test(str)) return true;
+  }
+  
+  if (/\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/.test(str)) {
+    return true;
+  }
+  
+  return false;
+}
+
+function isTextValue(value: any): boolean {
+  if (value === null || value === undefined || value === '') return false;
+  
+  const str = String(value).trim();
+  
+  if (str.length < 2) return false;
+  if (!/[א-תa-zA-Z]/.test(str)) return false;
+  
+  return true;
+}
+
+// ==================== DATE PARSING ====================
+
+function formatDateString(date: Date): string {
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function parseDateValue(value: any): string {
+  if (value === null || value === undefined || value === '') return '';
+  
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) return '';
+    return formatDateString(value);
+  }
+  
+  // Excel serial date
+  if (typeof value === 'number' && value > 25000 && value < 100000) {
+    const date = new Date((value - 25569) * 86400 * 1000);
+    if (!isNaN(date.getTime())) {
+      return formatDateString(date);
+    }
+  }
+  
+  const str = String(value).trim();
+  
+  // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+  const ddmmyyyy = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+  if (ddmmyyyy) {
+    const [, day, month, year] = ddmmyyyy;
+    return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+  }
+  
+  // YYYY-MM-DD or YYYY/MM/DD
+  const yyyymmdd = str.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
+  if (yyyymmdd) {
+    const [, year, month, day] = yyyymmdd;
+    return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+  }
+  
+  // DD/MM/YY
+  const ddmmyy = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/);
+  if (ddmmyy) {
+    const [, day, month, year] = ddmmyy;
+    const fullYear = parseInt(year) > 50 ? `19${year}` : `20${year}`;
+    return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${fullYear}`;
+  }
+  
+  // Try native Date parsing
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 1900 && parsed.getFullYear() < 2100) {
+    return formatDateString(parsed);
+  }
+  
+  // Return as-is if nothing works
+  return str;
+}
+
+// ==================== MAIN API HANDLER ====================
 
 export async function POST(request: NextRequest) {
   console.log('[Extract Names API] Starting extraction...');
   
   try {
-    const { headers, rows } = await request.json();
+    // Parse request
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      console.error('[Extract Names API] Failed to parse request body');
+      return NextResponse.json({ success: false, error: 'Invalid request format' }, { status: 400 });
+    }
+
+    const { headers, rows } = body;
     
-    if (!headers || !rows || rows.length === 0) {
-      return NextResponse.json({ error: 'No data provided' }, { status: 400 });
+    // Validate input
+    if (!headers || !Array.isArray(headers) || headers.length === 0) {
+      console.error('[Extract Names API] No headers provided');
+      return NextResponse.json({ success: false, error: 'No headers provided' }, { status: 400 });
+    }
+    
+    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+      console.error('[Extract Names API] No rows provided');
+      return NextResponse.json({ success: false, error: 'No rows provided' }, { status: 400 });
     }
     
     console.log(`[Extract Names API] Processing ${rows.length} rows with ${headers.length} columns`);
     console.log('[Extract Names API] Headers:', headers);
     
-    // First, try to find columns using simple pattern matching (faster and more reliable)
-    let nameColumn = findColumnByPattern(headers, NAME_PATTERNS);
-    let dateColumn = findColumnByPattern(headers, DATE_PATTERNS);
+    // Detect column mapping using proven logic
+    const mapping = detectColumnMapping(headers, rows);
+    console.log('[Extract Names API] Detected mapping:', mapping);
     
-    console.log('[Extract Names API] Pattern match - nameColumn:', nameColumn, 'dateColumn:', dateColumn);
+    // Extract data from rows
+    const extractedRows: ExtractedRow[] = [];
     
-    // If pattern matching didn't find columns, try Gemini AI
-    if (!nameColumn || !dateColumn) {
-      try {
-        // Build a summary of the data for Gemini
-        const sampleRows = rows.slice(0, 5).map((row: any, i: number) => {
-          const rowData = row.data || row;
-          return `שורה ${i + 1}: ${JSON.stringify(rowData)}`;
-        }).join('\n');
-        
-        const prompt = `אתה מומחה בניתוח טבלאות.
-
-כותרות הטבלה: ${headers.join(', ')}
-
-דוגמה לשורות:
-${sampleRows}
-
-זהה את העמודות הבאות:
-1. עמודת שם לקוח (מכילה שמות של אנשים)
-2. עמודת תאריך (מכילה תאריכים)
-
-החזר JSON בלבד:
-{"nameColumn": "שם העמודה", "dateColumn": "שם העמודה"}
-
-אם עמודה לא נמצאה, החזר null.`;
-
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { temperature: 0.1, maxOutputTokens: 200 },
-            }),
-          }
-        );
-        
-        if (response.ok) {
-          const geminiData = await response.json();
-          let aiResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          console.log('[Extract Names API] AI response:', aiResponse);
-          
-          // Clean and parse response
-          aiResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-          const aiMapping = JSON.parse(aiResponse);
-          
-          if (!nameColumn && aiMapping.nameColumn) nameColumn = aiMapping.nameColumn;
-          if (!dateColumn && aiMapping.dateColumn) dateColumn = aiMapping.dateColumn;
-        }
-      } catch (aiError) {
-        console.log('[Extract Names API] AI fallback error:', aiError);
-        // Continue with pattern matching results
-      }
-    }
-    
-    // If still no columns found, use first two columns as fallback
-    if (!nameColumn && headers.length > 0) {
-      nameColumn = headers[0];
-      console.log('[Extract Names API] Using first column as name:', nameColumn);
-    }
-    
-    if (!dateColumn && headers.length > 1) {
-      // Try to find a column that looks like it contains dates
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      
+      // Skip empty rows
+      let hasData = false;
       for (const header of headers) {
-        const sampleValue = rows[0]?.data?.[header] || rows[0]?.[header];
-        if (sampleValue) {
-          const strVal = String(sampleValue);
-          if (/\d{1,4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,4}/.test(strVal) || typeof sampleValue === 'number') {
-            dateColumn = header;
-            console.log('[Extract Names API] Found date column by value:', dateColumn);
+        if (row[header] !== null && row[header] !== undefined && String(row[header]).trim() !== '') {
+          hasData = true;
+          break;
+        }
+      }
+      if (!hasData) continue;
+      
+      // Extract customer name
+      let customerName = '';
+      if (mapping.customerName && row[mapping.customerName]) {
+        customerName = String(row[mapping.customerName]).trim();
+      }
+      // Fallback: find any text value
+      if (!customerName) {
+        for (const header of headers) {
+          const val = row[header];
+          if (val && isTextValue(val) && !isDateValue(val) && !isNumericValue(val)) {
+            customerName = String(val).trim();
             break;
           }
         }
       }
-    }
-    
-    console.log('[Extract Names API] Final mapping - nameColumn:', nameColumn, 'dateColumn:', dateColumn);
-    
-    // Extract data from rows
-    const extractedRows: ExtractedRow[] = rows.map((row: any, index: number) => {
-      const rowData = row.data || row;
       
-      let customerName = '';
+      // Extract date
       let date = '';
-      
-      if (nameColumn && rowData[nameColumn] !== undefined) {
-        customerName = String(rowData[nameColumn] || '').trim();
+      if (mapping.date && row[mapping.date]) {
+        date = parseDateValue(row[mapping.date]);
+      }
+      // Fallback: find any date value
+      if (!date) {
+        for (const header of headers) {
+          const val = row[header];
+          if (val && isDateValue(val)) {
+            date = parseDateValue(val);
+            if (date) break;
+          }
+        }
       }
       
-      if (dateColumn && rowData[dateColumn] !== undefined) {
-        date = formatDate(rowData[dateColumn]);
+      // Add row if has at least name or date
+      if (customerName || date) {
+        extractedRows.push({
+          customerName,
+          date,
+          rowIndex: i + 1,
+        });
       }
-      
-      return {
-        customerName,
-        date,
-        rowIndex: index + 1,
-      };
-    });
-    
-    // Filter out empty rows
-    const validRows = extractedRows.filter(r => r.customerName || r.date);
-    
-    console.log(`[Extract Names API] Extracted ${validRows.length} valid rows`);
-    
-    if (validRows.length === 0) {
-      // Return all rows with whatever data we have
-      return NextResponse.json({
-        success: true,
-        columnMapping: { nameColumn, dateColumn },
-        rows: extractedRows,
-        totalRows: rows.length,
-      });
     }
     
+    console.log(`[Extract Names API] Extracted ${extractedRows.length} valid rows`);
+    
+    // Return success even if no rows found (let client handle it)
     return NextResponse.json({
       success: true,
-      columnMapping: { nameColumn, dateColumn },
-      rows: validRows,
+      columnMapping: mapping,
+      rows: extractedRows,
       totalRows: rows.length,
     });
     
