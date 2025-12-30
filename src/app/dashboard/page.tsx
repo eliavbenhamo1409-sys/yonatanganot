@@ -17,7 +17,22 @@ import {
   FileSpreadsheet,
   ArrowLeft,
   X,
+  Brain,
+  Zap,
+  Search,
+  Database,
 } from 'lucide-react';
+
+// AI Thinking Messages
+const AI_THINKING_MESSAGES = [
+  { icon: Search, text: 'סורק את מבנה הטבלה...' },
+  { icon: Database, text: 'מזהה עמודות רלוונטיות...' },
+  { icon: Brain, text: 'מנתח את הנתונים...' },
+  { icon: Sparkles, text: 'מחלץ פרטי לקוחות...' },
+  { icon: Zap, text: 'מחשב סכומים...' },
+  { icon: CheckCircle2, text: 'מאמת תאריכים...' },
+  { icon: FileText, text: 'יוצר קבלות...' },
+];
 
 interface ExtractedReceipt {
   customerName: string;
@@ -60,6 +75,19 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [fileName, setFileName] = useState<string>('');
+  const [thinkingIndex, setThinkingIndex] = useState(0);
+
+  // Rotate AI thinking messages
+  useEffect(() => {
+    if (step === 'analyzing') {
+      const interval = setInterval(() => {
+        setThinkingIndex((prev) => (prev + 1) % AI_THINKING_MESSAGES.length);
+      }, 2000);
+      return () => clearInterval(interval);
+    } else {
+      setThinkingIndex(0);
+    }
+  }, [step]);
 
   // Redirect to onboarding if not complete
   useEffect(() => {
@@ -288,18 +316,128 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '1rem', padding: '3rem 2rem', textAlign: 'center' }}
+                style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '1rem', padding: '2rem', textAlign: 'center' }}
               >
-                <div style={{ width: '5rem', height: '5rem', margin: '0 auto 1.5rem', background: 'rgba(63, 193, 201, 0.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Loader2 style={{ width: '2.5rem', height: '2.5rem', color: '#3FC1C9', animation: 'spin 1s linear infinite' }} />
-                </div>
+                {/* AI Brain Animation for analyzing step */}
+                {step === 'analyzing' ? (
+                  <>
+                    {/* Animated Brain Icon */}
+                    <div style={{ position: 'relative', width: '6rem', height: '6rem', margin: '0 auto 1.5rem' }}>
+                      {/* Outer pulse ring */}
+                      <motion.div
+                        animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'rgba(139, 92, 246, 0.3)',
+                          borderRadius: '50%',
+                        }}
+                      />
+                      {/* Inner pulse ring */}
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1], opacity: [0.7, 0.2, 0.7] }}
+                        transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
+                        style={{
+                          position: 'absolute',
+                          inset: '0.5rem',
+                          background: 'rgba(63, 193, 201, 0.3)',
+                          borderRadius: '50%',
+                        }}
+                      />
+                      {/* Brain icon container */}
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(135deg, #8b5cf6 0%, #3FC1C9 100%)',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 0 30px rgba(139, 92, 246, 0.5)',
+                      }}>
+                        <motion.div
+                          animate={{ rotate: [0, 5, -5, 0] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
+                          <Brain style={{ width: '2.5rem', height: '2.5rem', color: 'white' }} />
+                        </motion.div>
+                      </div>
+                    </div>
 
-                <p style={{ color: 'white', fontSize: '1.25rem', fontWeight: '500', marginBottom: '0.5rem' }}>
-                  {getStepMessage()}
-                </p>
-                <p style={{ color: '#64748B', fontSize: '0.9rem' }}>
-                  {fileName}
-                </p>
+                    {/* AI Status */}
+                    <div style={{ marginBottom: '1rem' }}>
+                      <p style={{ color: 'white', fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                        🤖 AI מנתח את הקובץ
+                      </p>
+                      
+                      {/* Animated thinking message */}
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={thinkingIndex}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.3 }}
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            gap: '0.5rem',
+                            padding: '0.75rem 1rem',
+                            background: 'rgba(139, 92, 246, 0.15)',
+                            borderRadius: '0.5rem',
+                            margin: '0.75rem auto',
+                            maxWidth: '280px'
+                          }}
+                        >
+                          {(() => {
+                            const CurrentIcon = AI_THINKING_MESSAGES[thinkingIndex].icon;
+                            return <CurrentIcon style={{ width: '1.25rem', height: '1.25rem', color: '#8b5cf6' }} />;
+                          })()}
+                          <span style={{ color: '#c4b5fd', fontSize: '0.9rem' }}>
+                            {AI_THINKING_MESSAGES[thinkingIndex].text}
+                          </span>
+                        </motion.div>
+                      </AnimatePresence>
+
+                      {/* Thinking dots */}
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '0.3rem', marginTop: '0.75rem' }}>
+                        {[0, 1, 2].map((i) => (
+                          <motion.div
+                            key={i}
+                            animate={{ y: [0, -8, 0], opacity: [0.4, 1, 0.4] }}
+                            transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                            style={{
+                              width: '0.5rem',
+                              height: '0.5rem',
+                              background: '#8b5cf6',
+                              borderRadius: '50%',
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <p style={{ color: '#64748B', fontSize: '0.85rem' }}>
+                      {fileName}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    {/* Regular loading for upload/parse */}
+                    <div style={{ width: '4rem', height: '4rem', margin: '0 auto 1rem', background: 'rgba(63, 193, 201, 0.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Loader2 style={{ width: '2rem', height: '2rem', color: '#3FC1C9', animation: 'spin 1s linear infinite' }} />
+                    </div>
+
+                    <p style={{ color: 'white', fontSize: '1.1rem', fontWeight: '500', marginBottom: '0.3rem' }}>
+                      {getStepMessage()}
+                    </p>
+                    <p style={{ color: '#64748B', fontSize: '0.85rem' }}>
+                      {fileName}
+                    </p>
+                  </>
+                )}
 
                 {/* Progress Steps */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
@@ -309,12 +447,17 @@ export default function DashboardPage() {
                     const isCurrent = stepIndex === i;
                     return (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <div style={{
-                          width: '1.75rem', height: '1.75rem', borderRadius: '50%',
-                          background: isActive ? '#3FC1C9' : '#334155',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          transition: 'all 0.3s'
-                        }}>
+                        <motion.div
+                          animate={isCurrent ? { scale: [1, 1.1, 1] } : {}}
+                          transition={{ duration: 1, repeat: Infinity }}
+                          style={{
+                            width: '1.75rem', height: '1.75rem', borderRadius: '50%',
+                            background: isCurrent ? 'linear-gradient(135deg, #8b5cf6 0%, #3FC1C9 100%)' : isActive ? '#3FC1C9' : '#334155',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            transition: 'all 0.3s',
+                            boxShadow: isCurrent ? '0 0 15px rgba(139, 92, 246, 0.5)' : 'none'
+                          }}
+                        >
                           {isCurrent ? (
                             <Loader2 style={{ width: '0.9rem', height: '0.9rem', color: 'white', animation: 'spin 1s linear infinite' }} />
                           ) : isActive ? (
@@ -322,8 +465,8 @@ export default function DashboardPage() {
                           ) : (
                             <span style={{ color: '#64748B', fontSize: '0.7rem' }}>{i + 1}</span>
                           )}
-                        </div>
-                        <span style={{ color: isActive ? '#3FC1C9' : '#64748B', fontSize: '0.8rem' }}>{label}</span>
+                        </motion.div>
+                        <span style={{ color: isCurrent ? '#c4b5fd' : isActive ? '#3FC1C9' : '#64748B', fontSize: '0.8rem', fontWeight: isCurrent ? '600' : '400' }}>{label}</span>
                       </div>
                     );
                   })}
