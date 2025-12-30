@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
+import { useDropzone } from 'react-dropzone';
+import { parseExcelFile } from '@/utils/excelParser';
 
 interface WorksheetRow {
   id: string;
@@ -20,14 +22,20 @@ interface SetupData {
   commonAmounts: number[];
 }
 
-type SetupStep = 'setup' | 'worksheet';
+type SetupStep = 'upload' | 'setup' | 'worksheet';
 
 export default function WorksheetPage() {
   const router = useRouter();
-  const { excelData } = useStore();
+  const { excelData, setExcelData, setExcelHeaders } = useStore();
+  
+  // Upload state
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string>('');
+  const [localData, setLocalData] = useState<any[]>([]);
   
   // Setup state
-  const [step, setStep] = useState<SetupStep>('setup');
+  const [step, setStep] = useState<SetupStep>('upload');
   const [setupData, setSetupData] = useState<SetupData>({
     startingNumber: 1001,
     paymentMethods: ['מזומן', 'ביט', 'פייבוקס', 'העברה בנקאית', 'צ\'יק', 'אשראי'],
@@ -40,22 +48,81 @@ export default function WorksheetPage() {
   const [rows, setRows] = useState<WorksheetRow[]>([]);
   const [editingCell, setEditingCell] = useState<{ rowId: string; field: 'paymentMethod' | 'amount' } | null>(null);
   
-  // Initialize rows from excel data
+  // Check for existing data
   useEffect(() => {
-    if (excelData && excelData.length > 0 && step === 'worksheet') {
+    if (excelData && excelData.length > 0) {
+      setLocalData(excelData);
+      setStep('setup');
+    }
+  }, [excelData]);
+  
+  // Process uploaded file
+  const processFile = async (file: File) => {
+    setIsUploading(true);
+    setUploadError(null);
+    setFileName(file.name);
+    
+    try {
+      const parsed = await parseExcelFile(file);
+      
+      if (!parsed.headers || parsed.headers.length === 0) {
+        throw new Error('הקובץ לא מכיל כותרות עמודות');
+      }
+      
+      if (!parsed.rows || parsed.rows.length === 0) {
+        throw new Error('הקובץ לא מכיל נתונים');
+      }
+      
+      // Save to store
+      setExcelHeaders(parsed.headers);
+      setExcelData(parsed.rows);
+      setLocalData(parsed.rows);
+      
+      console.log(`[Worksheet] Loaded ${parsed.rows.length} rows`);
+      
+      setStep('setup');
+    } catch (err) {
+      console.error('File processing error:', err);
+      setUploadError(err instanceof Error ? err.message : 'שגיאה בעיבוד הקובץ');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+  
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      processFile(acceptedFiles[0]);
+    }
+  }, []);
+  
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'text/csv': ['.csv'],
+    },
+    maxFiles: 1,
+    disabled: isUploading,
+  });
+  
+  // Initialize rows from data
+  useEffect(() => {
+    const dataToUse = localData.length > 0 ? localData : excelData;
+    if (dataToUse && dataToUse.length > 0 && step === 'worksheet') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const initialRows: WorksheetRow[] = (excelData as any[]).map((r: any, index: number) => ({
+      const initialRows: WorksheetRow[] = (dataToUse as any[]).map((r: any, index: number) => ({
         id: `row-${index}`,
         receiptNumber: setupData.startingNumber + index,
-        date: String(r['תאריך'] || r['date'] || ''),
-        customerName: String(r['שם לקוח'] || r['שם'] || r['customerName'] || r['name'] || ''),
+        date: String(r['תאריך'] || r['date'] || r.data?.['תאריך'] || r.data?.['date'] || ''),
+        customerName: String(r['שם לקוח'] || r['שם'] || r['customerName'] || r['name'] || r.data?.['שם לקוח'] || r.data?.['שם'] || ''),
         paymentMethod: '',
         amount: null,
         isComplete: false,
       }));
       setRows(initialRows);
     }
-  }, [excelData, step, setupData.startingNumber]);
+  }, [localData, excelData, step, setupData.startingNumber]);
   
   // Add payment method
   const addPaymentMethod = useCallback(() => {
@@ -132,17 +199,11 @@ export default function WorksheetPage() {
   
   // Continue to worksheet
   const continueToWorksheet = () => {
-    if (!excelData || excelData.length === 0) {
-      alert('אין נתונים מהגיליון המקורי. אנא העלה קובץ קודם.');
-      router.push('/dashboard');
-      return;
-    }
     setStep('worksheet');
   };
   
   // Export to Excel
   const exportToExcel = async () => {
-    // Import xlsx dynamically
     const XLSX = await import('xlsx');
     
     const data = rows.map(row => ({
@@ -159,11 +220,11 @@ export default function WorksheetPage() {
     XLSX.writeFile(wb, 'worksheet.xlsx');
   };
   
-  // Setup Step
-  if (step === 'setup') {
+  // Upload Step
+  if (step === 'upload') {
     return (
       <div className="min-h-screen bg-gray-50 p-6" dir="rtl">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="mb-8">
             <button
@@ -172,8 +233,94 @@ export default function WorksheetPage() {
             >
               ← חזרה
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">יצירת גיליון עבודה חכם</h1>
-            <p className="text-gray-600 mt-2">הגדר את הפרמטרים לפני יצירת הגיליון</p>
+            <h1 className="text-3xl font-bold text-gray-900">גיליון עבודה חכם</h1>
+            <p className="text-gray-600 mt-2">העלה קובץ Excel עם תאריכים ושמות לקוחות</p>
+          </div>
+          
+          {/* Upload Area */}
+          <div
+            {...getRootProps()}
+            className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${
+              isDragActive 
+                ? 'border-purple-500 bg-purple-50' 
+                : uploadError 
+                  ? 'border-red-400 bg-red-50' 
+                  : 'border-gray-300 hover:border-purple-400 bg-white'
+            }`}
+          >
+            <input {...getInputProps()} />
+            
+            <div className="w-20 h-20 mx-auto mb-6 bg-purple-100 rounded-2xl flex items-center justify-center">
+              {isUploading ? (
+                <svg className="w-10 h-10 text-purple-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-10 h-10 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              )}
+            </div>
+            
+            {isUploading ? (
+              <p className="text-purple-600 text-lg font-medium">מעבד את הקובץ...</p>
+            ) : isDragActive ? (
+              <p className="text-purple-600 text-lg font-medium">שחרר את הקובץ כאן...</p>
+            ) : (
+              <>
+                <p className="text-gray-800 text-xl font-medium mb-2">גרור קובץ Excel או לחץ לבחירה</p>
+                <p className="text-gray-500 text-sm">תומך ב-XLSX, XLS, CSV</p>
+              </>
+            )}
+            
+            {uploadError && (
+              <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg text-red-600">
+                {uploadError}
+              </div>
+            )}
+            
+            {fileName && !uploadError && (
+              <div className="mt-4 text-sm text-gray-500">
+                קובץ: {fileName}
+              </div>
+            )}
+          </div>
+          
+          {/* Help Text */}
+          <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <h3 className="font-semibold text-purple-800 mb-2">💡 טיפים</h3>
+            <ul className="text-sm text-purple-700 space-y-1">
+              <li>• וודא שהקובץ מכיל עמודות של תאריך ושם לקוח</li>
+              <li>• השורה הראשונה צריכה להכיל כותרות</li>
+              <li>• ניתן להשלים אמצעי תשלום וסכומים בשלב הבא</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Setup Step
+  if (step === 'setup') {
+    const dataCount = localData.length || excelData?.length || 0;
+    
+    return (
+      <div className="min-h-screen bg-gray-50 p-6" dir="rtl">
+        <div className="max-w-3xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <button
+              onClick={() => setStep('upload')}
+              className="text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-2"
+            >
+              ← החלף קובץ
+            </button>
+            <h1 className="text-3xl font-bold text-gray-900">הגדרת גיליון עבודה</h1>
+            <p className="text-gray-600 mt-2">
+              נמצאו <span className="font-bold text-purple-600">{dataCount}</span> שורות בקובץ
+              {fileName && <span className="text-gray-400"> ({fileName})</span>}
+            </p>
           </div>
           
           {/* Setup Form */}
@@ -277,9 +424,9 @@ export default function WorksheetPage() {
             {/* Continue Button */}
             <button
               onClick={continueToWorksheet}
-              className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-indigo-700 shadow-lg"
+              className="w-full py-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-semibold text-lg hover:from-purple-600 hover:to-indigo-700 shadow-lg"
             >
-              המשך ליצירת הגיליון →
+              המשך ליצירת הגיליון ({dataCount} שורות) →
             </button>
           </div>
         </div>
