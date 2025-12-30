@@ -15,46 +15,17 @@ import {
   Clock,
   Users,
   Lock,
-  Star,
-  Layers,
-  MousePointerClick
+  Star
 } from 'lucide-react';
-
-const fadeInUp = {
-  initial: { opacity: 0, y: 40 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
-};
-
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.15
-    }
-  }
-};
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#fafbfc]">
+    <div className="min-h-screen" style={{ background: '#0f172a' }}>
       {/* Hero Section */}
-      <section className="relative min-h-screen overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628] via-[#0f2847] to-[#0a1628]" />
-          
-          {/* Floating Orbs */}
-          <div className="absolute top-20 right-[20%] w-[500px] h-[500px] bg-[#3b82f6]/20 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute bottom-20 left-[10%] w-[400px] h-[400px] bg-[#8b5cf6]/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#06b6d4]/10 rounded-full blur-[150px]" />
-          
-          {/* Grid Pattern */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                             linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-            backgroundSize: '60px 60px'
-          }} />
-        </div>
+      <section className="relative min-h-screen" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%)' }}>
+        {/* Background Glow Effects */}
+        <div className="absolute top-20 right-1/4 w-96 h-96 rounded-full opacity-30" style={{ background: '#3b82f6', filter: 'blur(120px)' }} />
+        <div className="absolute bottom-20 left-1/4 w-80 h-80 rounded-full opacity-20" style={{ background: '#8b5cf6', filter: 'blur(100px)' }} />
 
         {/* Navigation */}
         <nav className="relative z-10 container mx-auto px-6 py-6">
@@ -62,29 +33,22 @@ export default function LandingPage() {
             <motion.div 
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
               className="flex items-center gap-3"
             >
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#3b82f6] to-[#8b5cf6] rounded-xl blur-lg opacity-50" />
-                <div className="relative w-12 h-12 bg-gradient-to-br from-[#3b82f6] to-[#8b5cf6] rounded-xl flex items-center justify-center shadow-lg">
-                  <FileText className="w-6 h-6 text-white" />
-                </div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>
+                <FileText className="w-6 h-6 text-white" />
               </div>
               <span className="text-2xl font-bold text-white">קבליט</span>
             </motion.div>
             
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
               <Link 
                 href="/dashboard" 
-                className="group relative inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-white font-medium hover:bg-white/20 transition-all duration-300"
+                className="flex items-center gap-2 px-6 py-3 rounded-full text-white font-medium transition-all hover:scale-105"
+                style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}
               >
                 <span>כניסה למערכת</span>
-                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                <ChevronLeft className="w-4 h-4" />
               </Link>
             </motion.div>
           </div>
@@ -95,15 +59,17 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               className="mb-8"
             >
-              <span className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#3b82f6]/20 to-[#8b5cf6]/20 backdrop-blur-sm border border-white/10 rounded-full text-sm font-medium text-white/90">
-                <Sparkles className="w-4 h-4 text-[#fbbf24]" />
-                <span>חדש! מיפוי עמודות חכם עם AI</span>
-                <Star className="w-4 h-4 text-[#fbbf24]" />
+              <span 
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium"
+                style={{ background: 'rgba(251, 191, 36, 0.2)', border: '1px solid rgba(251, 191, 36, 0.3)' }}
+              >
+                <Sparkles className="w-4 h-4" style={{ color: '#fbbf24' }} />
+                <span style={{ color: '#fbbf24' }}>חדש! מיפוי עמודות חכם עם AI</span>
+                <Star className="w-4 h-4" style={{ color: '#fbbf24' }} />
               </span>
             </motion.div>
             
@@ -111,12 +77,17 @@ export default function LandingPage() {
             <motion.h1 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="text-5xl md:text-7xl font-bold text-white mb-8 leading-[1.1]"
+              transition={{ delay: 0.1 }}
+              className="text-5xl md:text-7xl font-black mb-8 leading-tight"
             >
-              הפקת קבלות PDF
+              <span className="text-white">הפקת קבלות PDF</span>
               <br />
-              <span className="bg-gradient-to-r from-[#3b82f6] via-[#8b5cf6] to-[#06b6d4] bg-clip-text text-transparent">
+              <span style={{ 
+                background: 'linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4)', 
+                WebkitBackgroundClip: 'text', 
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
                 בלחיצה אחת
               </span>
             </motion.h1>
@@ -125,36 +96,42 @@ export default function LandingPage() {
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              className="text-xl md:text-2xl text-white/60 mb-12 max-w-2xl mx-auto leading-relaxed"
+              transition={{ delay: 0.2 }}
+              className="text-xl md:text-2xl mb-12 max-w-2xl mx-auto leading-relaxed"
+              style={{ color: 'rgba(255,255,255,0.7)' }}
             >
-              העלו את קובץ האקסל שלכם ותנו למערכת לייצר קבלות PDF מקצועיות לכל שורה. 
-              <span className="text-white/80 font-medium"> פשוט, מהיר ומאובטח.</span>
+              העלו את קובץ האקסל שלכם ותנו למערכת לייצר קבלות PDF מקצועיות לכל שורה.
+              <span className="font-semibold text-white"> פשוט, מהיר ומאובטח.</span>
             </motion.p>
             
             {/* CTA Buttons */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
+              transition={{ delay: 0.3 }}
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
               <Link 
                 href="/onboarding" 
-                className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 overflow-hidden rounded-2xl font-bold text-lg transition-all duration-300"
+                className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-bold text-lg text-white transition-all hover:scale-105 hover:shadow-2xl"
+                style={{ 
+                  background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                  boxShadow: '0 10px 40px rgba(59, 130, 246, 0.4)'
+                }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-[#3b82f6] via-[#8b5cf6] to-[#3b82f6] bg-[length:200%_100%] animate-gradient-x" />
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-[#8b5cf6] via-[#3b82f6] to-[#8b5cf6] bg-[length:200%_100%] animate-gradient-x" />
-                <span className="relative text-white">התחל עכשיו - חינם</span>
-                <ArrowLeft className="relative w-5 h-5 text-white group-hover:-translate-x-1 transition-transform" />
+                <span>התחל עכשיו - חינם</span>
+                <ArrowLeft className="w-5 h-5" />
               </Link>
               
               <a 
                 href="#how-it-works" 
-                className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-white/5 backdrop-blur-sm border-2 border-white/20 rounded-2xl font-bold text-lg text-white hover:bg-white/10 hover:border-white/30 transition-all duration-300"
+                className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-bold text-lg text-white transition-all hover:scale-105"
+                style={{ 
+                  background: 'transparent',
+                  border: '2px solid rgba(255,255,255,0.3)'
+                }}
               >
                 <span>איך זה עובד?</span>
-                <MousePointerClick className="w-5 h-5 opacity-60 group-hover:opacity-100 transition-opacity" />
               </a>
             </motion.div>
 
@@ -162,8 +139,8 @@ export default function LandingPage() {
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-              className="mt-20 grid grid-cols-3 gap-8 max-w-2xl mx-auto"
+              transition={{ delay: 0.5 }}
+              className="mt-24 grid grid-cols-3 gap-8 max-w-2xl mx-auto"
             >
               {[
                 { number: '10K+', label: 'קבלות נוצרו' },
@@ -171,8 +148,8 @@ export default function LandingPage() {
                 { number: '99.9%', label: 'זמינות' },
               ].map((stat, index) => (
                 <div key={index} className="text-center">
-                  <div className="text-3xl md:text-4xl font-bold text-white mb-1">{stat.number}</div>
-                  <div className="text-sm text-white/50">{stat.label}</div>
+                  <div className="text-4xl md:text-5xl font-black text-white mb-2">{stat.number}</div>
+                  <div className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>{stat.label}</div>
                 </div>
               ))}
             </motion.div>
@@ -186,119 +163,132 @@ export default function LandingPage() {
           transition={{ delay: 1 }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2"
         >
-          <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2">
+          <div className="w-6 h-10 rounded-full flex items-start justify-center p-2" style={{ border: '2px solid rgba(255,255,255,0.3)' }}>
             <motion.div
               animate={{ y: [0, 8, 0] }}
               transition={{ repeat: Infinity, duration: 1.5 }}
-              className="w-1.5 h-1.5 bg-white/60 rounded-full"
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ background: 'rgba(255,255,255,0.6)' }}
             />
           </div>
         </motion.div>
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-32 bg-white relative overflow-hidden">
-        {/* Background Elements */}
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-[#0a1628] to-transparent" />
-        
-        <div className="container mx-auto px-6 relative z-10">
+      <section id="how-it-works" className="py-24" style={{ background: '#ffffff' }}>
+        <div className="container mx-auto px-6">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-20"
+            className="text-center mb-16"
           >
-            <span className="inline-block px-4 py-2 bg-[#3b82f6]/10 rounded-full text-[#3b82f6] font-semibold text-sm mb-4">
+            <span 
+              className="inline-block px-4 py-2 rounded-full text-sm font-bold mb-4"
+              style={{ background: '#dbeafe', color: '#1d4ed8' }}
+            >
               תהליך פשוט
             </span>
-            <h2 className="text-4xl md:text-5xl font-bold text-[#0a1628] mb-6">
+            <h2 className="text-4xl md:text-5xl font-black mb-4" style={{ color: '#0f172a' }}>
               איך זה עובד?
             </h2>
-            <p className="text-xl text-[#64748b] max-w-xl mx-auto">
+            <p className="text-xl" style={{ color: '#64748b' }}>
               3 צעדים פשוטים לקבלות מקצועיות
             </p>
           </motion.div>
 
-          <motion.div 
-            variants={staggerContainer}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto"
-          >
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[
               {
                 icon: FileSpreadsheet,
                 step: "01",
                 title: "העלו את האקסל",
                 description: "גררו את קובץ האקסל או CSV שלכם. המערכת תזהה אוטומטית את העמודות הרלוונטיות.",
-                gradient: "from-[#3b82f6] to-[#06b6d4]"
+                color: "#3b82f6",
+                bg: "#dbeafe"
               },
               {
                 icon: Sparkles,
                 step: "02",
                 title: "בדקו ואשרו",
                 description: "המערכת מציעה מיפוי חכם בין העמודות לשדות הקבלה. אפשר לשנות ידנית לפי הצורך.",
-                gradient: "from-[#8b5cf6] to-[#ec4899]"
+                color: "#8b5cf6",
+                bg: "#ede9fe"
               },
               {
                 icon: Download,
                 step: "03",
                 title: "הורידו את הקבלות",
                 description: "קבלו ZIP עם כל הקבלות, או הורידו כל קבלה בנפרד. גם PDF מאוחד זמין!",
-                gradient: "from-[#10b981] to-[#06b6d4]"
+                color: "#10b981",
+                bg: "#d1fae5"
               }
             ].map((item, index) => (
               <motion.div
                 key={index}
-                variants={fadeInUp}
-                className="group relative"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.15 }}
+                className="relative p-8 rounded-3xl transition-all hover:-translate-y-2 hover:shadow-xl"
+                style={{ 
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
+                }}
               >
-                <div className="relative bg-white rounded-3xl p-8 shadow-xl shadow-[#0a1628]/5 border border-[#e2e8f0] hover:border-transparent hover:shadow-2xl hover:shadow-[#3b82f6]/10 transition-all duration-500 h-full">
-                  {/* Step Number */}
-                  <div className={`absolute -top-5 right-8 w-10 h-10 bg-gradient-to-br ${item.gradient} rounded-xl flex items-center justify-center font-bold text-white text-sm shadow-lg`}>
-                    {item.step}
-                  </div>
-                  
-                  {/* Icon */}
-                  <div className={`w-16 h-16 mb-6 bg-gradient-to-br ${item.gradient} rounded-2xl flex items-center justify-center transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
-                    <item.icon className="w-8 h-8 text-white" />
-                  </div>
-                  
-                  <h3 className="text-2xl font-bold text-[#0a1628] mb-4">
-                    {item.title}
-                  </h3>
-                  <p className="text-[#64748b] leading-relaxed text-lg">
-                    {item.description}
-                  </p>
+                {/* Step Number */}
+                <div 
+                  className="absolute -top-4 right-8 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-sm"
+                  style={{ background: item.color }}
+                >
+                  {item.step}
                 </div>
+                
+                {/* Icon */}
+                <div 
+                  className="w-16 h-16 mb-6 rounded-2xl flex items-center justify-center"
+                  style={{ background: item.bg }}
+                >
+                  <item.icon className="w-8 h-8" style={{ color: item.color }} />
+                </div>
+                
+                <h3 className="text-2xl font-bold mb-3" style={{ color: '#0f172a' }}>
+                  {item.title}
+                </h3>
+                <p className="text-lg leading-relaxed" style={{ color: '#64748b' }}>
+                  {item.description}
+                </p>
               </motion.div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Features */}
-      <section className="py-32 bg-gradient-to-b from-[#f8fafc] to-white relative">
+      <section className="py-24" style={{ background: '#f8fafc' }}>
         <div className="container mx-auto px-6">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-20"
+            className="text-center mb-16"
           >
-            <span className="inline-block px-4 py-2 bg-[#8b5cf6]/10 rounded-full text-[#8b5cf6] font-semibold text-sm mb-4">
+            <span 
+              className="inline-block px-4 py-2 rounded-full text-sm font-bold mb-4"
+              style={{ background: '#ede9fe', color: '#7c3aed' }}
+            >
               יתרונות
             </span>
-            <h2 className="text-4xl md:text-5xl font-bold text-[#0a1628] mb-6">
+            <h2 className="text-4xl md:text-5xl font-black mb-4" style={{ color: '#0f172a' }}>
               למה קבליט?
             </h2>
-            <p className="text-xl text-[#64748b] max-w-xl mx-auto">
+            <p className="text-xl" style={{ color: '#64748b' }}>
               מערכת שנבנתה במיוחד לעסקים קטנים בישראל
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
             {[
               { icon: Zap, title: "מהיר", desc: "קבלות תוך שניות", color: "#f59e0b", bg: "#fef3c7" },
               { icon: Shield, title: "מאובטח", desc: "הקבצים נמחקים אוטומטית", color: "#10b981", bg: "#d1fae5" },
@@ -311,16 +301,17 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="group bg-white p-8 rounded-3xl shadow-lg shadow-[#0a1628]/5 border border-[#e2e8f0] hover:shadow-xl hover:border-transparent hover:-translate-y-2 transition-all duration-300"
+                className="p-6 rounded-2xl text-center transition-all hover:-translate-y-2 hover:shadow-lg"
+                style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}
               >
                 <div 
-                  className="w-14 h-14 mb-6 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110"
-                  style={{ backgroundColor: feature.bg }}
+                  className="w-14 h-14 mb-4 mx-auto rounded-xl flex items-center justify-center"
+                  style={{ background: feature.bg }}
                 >
                   <feature.icon className="w-7 h-7" style={{ color: feature.color }} />
                 </div>
-                <h3 className="text-xl font-bold text-[#0a1628] mb-2">{feature.title}</h3>
-                <p className="text-[#64748b]">{feature.desc}</p>
+                <h3 className="text-xl font-bold mb-2" style={{ color: '#0f172a' }}>{feature.title}</h3>
+                <p style={{ color: '#64748b' }}>{feature.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -328,30 +319,28 @@ export default function LandingPage() {
       </section>
 
       {/* Security Section */}
-      <section className="py-32 bg-[#0a1628] relative overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#10b981]/10 rounded-full blur-[150px]" />
-        </div>
-        
-        <div className="container mx-auto px-6 relative z-10">
+      <section className="py-24" style={{ background: '#0f172a' }}>
+        <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              className="grid md:grid-cols-2 gap-16 items-center"
-            >
-              <div>
-                <span className="inline-block px-4 py-2 bg-[#10b981]/20 rounded-full text-[#10b981] font-semibold text-sm mb-6">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+              >
+                <span 
+                  className="inline-block px-4 py-2 rounded-full text-sm font-bold mb-6"
+                  style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}
+                >
                   אבטחה מלאה
                 </span>
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-8">
+                <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
                   אבטחה ופרטיות
-                  <br />
-                  <span className="text-[#10b981]">ברמה הגבוהה ביותר</span>
                 </h2>
-                <ul className="space-y-5">
+                <h3 className="text-2xl font-bold mb-8" style={{ color: '#10b981' }}>
+                  ברמה הגבוהה ביותר
+                </h3>
+                <ul className="space-y-4">
                   {[
                     "הקבצים שלך לא נשמרים בשרתים שלנו",
                     "עיבוד מתבצע בדפדפן שלך בלבד",
@@ -366,52 +355,75 @@ export default function LandingPage() {
                       transition={{ delay: index * 0.1 }}
                       className="flex items-center gap-4"
                     >
-                      <div className="w-8 h-8 bg-[#10b981]/20 rounded-full flex items-center justify-center flex-shrink-0">
-                        <CheckCircle2 className="w-5 h-5 text-[#10b981]" />
+                      <div 
+                        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'rgba(16, 185, 129, 0.2)' }}
+                      >
+                        <CheckCircle2 className="w-5 h-5" style={{ color: '#10b981' }} />
                       </div>
-                      <span className="text-white/80 text-lg">{item}</span>
+                      <span className="text-lg" style={{ color: 'rgba(255,255,255,0.8)' }}>{item}</span>
                     </motion.li>
                   ))}
                 </ul>
-              </div>
+              </motion.div>
               
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#10b981] to-[#06b6d4] rounded-3xl blur-2xl opacity-20" />
-                <div className="relative bg-[#0f2847] rounded-3xl p-10 border border-white/10">
-                  <div className="text-center">
-                    <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-[#10b981] to-[#06b6d4] rounded-3xl flex items-center justify-center">
-                      <Lock className="w-12 h-12 text-white" />
-                    </div>
-                    <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#10b981]/20 rounded-full mb-6">
-                      <div className="w-2.5 h-2.5 bg-[#10b981] rounded-full animate-pulse" />
-                      <span className="font-semibold text-[#10b981]">עיבוד מקומי מאובטח</span>
-                    </div>
-                    <p className="text-white/60 text-lg leading-relaxed">
-                      כל העיבוד מתבצע בדפדפן שלך.
-                      <br />
-                      <span className="text-white/80 font-medium">הנתונים שלך נשארים אצלך.</span>
-                    </p>
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="relative"
+              >
+                <div 
+                  className="p-10 rounded-3xl text-center"
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1))',
+                    border: '1px solid rgba(16, 185, 129, 0.2)'
+                  }}
+                >
+                  <div 
+                    className="w-24 h-24 mx-auto mb-6 rounded-3xl flex items-center justify-center"
+                    style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)' }}
+                  >
+                    <Lock className="w-12 h-12 text-white" />
                   </div>
+                  <div 
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full mb-6"
+                    style={{ background: 'rgba(16, 185, 129, 0.2)' }}
+                  >
+                    <div 
+                      className="w-2.5 h-2.5 rounded-full animate-pulse"
+                      style={{ background: '#10b981' }}
+                    />
+                    <span className="font-bold" style={{ color: '#10b981' }}>עיבוד מקומי מאובטח</span>
+                  </div>
+                  <p className="text-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                    כל העיבוד מתבצע בדפדפן שלך.
+                    <br />
+                    <span className="font-semibold text-white">הנתונים שלך נשארים אצלך.</span>
+                  </p>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="py-32 bg-white">
+      <section className="py-24" style={{ background: '#ffffff' }}>
         <div className="container mx-auto px-6">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-20"
+            className="text-center mb-16"
           >
-            <span className="inline-block px-4 py-2 bg-[#06b6d4]/10 rounded-full text-[#06b6d4] font-semibold text-sm mb-4">
+            <span 
+              className="inline-block px-4 py-2 rounded-full text-sm font-bold mb-4"
+              style={{ background: '#cffafe', color: '#0891b2' }}
+            >
               שאלות נפוצות
             </span>
-            <h2 className="text-4xl md:text-5xl font-bold text-[#0a1628]">
+            <h2 className="text-4xl md:text-5xl font-black" style={{ color: '#0f172a' }}>
               יש לכם שאלות?
             </h2>
           </motion.div>
@@ -441,10 +453,11 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="group bg-[#f8fafc] hover:bg-white rounded-2xl p-8 border border-[#e2e8f0] hover:border-[#3b82f6]/30 hover:shadow-xl hover:shadow-[#3b82f6]/5 transition-all duration-300"
+                className="p-6 rounded-2xl transition-all hover:shadow-lg"
+                style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}
               >
-                <h3 className="text-xl font-bold text-[#0a1628] mb-3 group-hover:text-[#3b82f6] transition-colors">{faq.q}</h3>
-                <p className="text-[#64748b] text-lg leading-relaxed">{faq.a}</p>
+                <h3 className="text-xl font-bold mb-2" style={{ color: '#0f172a' }}>{faq.q}</h3>
+                <p className="text-lg" style={{ color: '#64748b' }}>{faq.a}</p>
               </motion.div>
             ))}
           </div>
@@ -452,63 +465,54 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#3b82f6] via-[#8b5cf6] to-[#06b6d4]" />
-        <div className="absolute inset-0 opacity-30" style={{
-          backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-          backgroundSize: '32px 32px'
-        }} />
-        
-        <div className="container mx-auto px-6 relative z-10 text-center">
+      <section className="py-24" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>
+        <div className="container mx-auto px-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl md:text-6xl font-bold text-white mb-8">
+            <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
               מוכנים להתחיל?
             </h2>
-            <p className="text-xl md:text-2xl text-white/80 mb-12 max-w-2xl mx-auto">
+            <p className="text-xl md:text-2xl mb-10 max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.8)' }}>
               הצטרפו לאלפי עסקים שכבר חוסכים שעות עבודה עם קבליט
             </p>
             <Link 
               href="/onboarding" 
-              className="group inline-flex items-center gap-3 bg-white text-[#3b82f6] px-10 py-5 rounded-2xl font-bold text-xl hover:bg-[#f8fafc] transition-all duration-300 shadow-2xl shadow-black/20 hover:scale-105"
+              className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-bold text-xl transition-all hover:scale-105"
+              style={{ 
+                background: '#ffffff',
+                color: '#3b82f6',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+              }}
             >
               <span>צור קבלות עכשיו</span>
-              <ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
+              <ArrowLeft className="w-6 h-6" />
             </Link>
           </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 bg-[#0a1628]">
+      <footer className="py-10" style={{ background: '#0f172a' }}>
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#3b82f6] to-[#8b5cf6] rounded-xl flex items-center justify-center">
+              <div 
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}
+              >
                 <FileText className="w-5 h-5 text-white" />
               </div>
               <span className="text-white font-bold text-lg">קבליט</span>
             </div>
-            <p className="text-white/40 text-sm">
+            <p style={{ color: 'rgba(255,255,255,0.4)' }}>
               © 2025 קבליט. כל הזכויות שמורות.
             </p>
           </div>
         </div>
       </footer>
-
-      {/* Custom Styles */}
-      <style jsx global>{`
-        @keyframes gradient-x {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        .animate-gradient-x {
-          animation: gradient-x 3s ease infinite;
-        }
-      `}</style>
     </div>
   );
 }
