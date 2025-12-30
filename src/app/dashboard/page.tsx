@@ -1,59 +1,83 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
-import FileUpload from '@/components/FileUpload';
-import { parseExcelFile, suggestColumnMappings } from '@/utils/excelParser';
-import { format } from 'date-fns';
+import { parseExcelFile } from '@/utils/excelParser';
+import { useDropzone } from 'react-dropzone';
 import {
   FileText,
   Settings,
-  Plus,
-  Download,
-  Clock,
+  Upload,
+  Loader2,
   CheckCircle2,
   AlertCircle,
-  Loader2,
-  Eye,
-  FileSpreadsheet,
-  Building2,
-  Upload,
   Sparkles,
+  FileSpreadsheet,
   ArrowLeft,
+  X,
 } from 'lucide-react';
+
+interface ExtractedReceipt {
+  customerName: string;
+  amount: number;
+  date: string;
+  description: string;
+  paymentMethod: string;
+  notes: string;
+  rowNumber: number;
+  isComplete: boolean;
+  missingFields: string[];
+}
+
+interface AnalysisResult {
+  success: boolean;
+  receipts: ExtractedReceipt[];
+  summary: {
+    totalRows: number;
+    completeRows: number;
+    incompleteRows: number;
+    totalAmount: number;
+    dateRange: { from: string; to: string };
+  };
+  error?: string;
+}
+
+type ProcessingStep = 'idle' | 'uploading' | 'parsing' | 'analyzing' | 'done' | 'error';
 
 export default function DashboardPage() {
   const router = useRouter();
   const {
     businessInfo,
     isOnboardingComplete,
-    batchRuns,
     setCurrentFile,
     setExcelData,
     setExcelHeaders,
-    setColumnMappings,
-    currentFile,
   } = useStore();
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [step, setStep] = useState<ProcessingStep>('idle');
+  const [error, setError] = useState<string | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [fileName, setFileName] = useState<string>('');
 
+  // Redirect to onboarding if not complete
   useEffect(() => {
     if (!isOnboardingComplete) {
       router.push('/onboarding');
     }
   }, [isOnboardingComplete, router]);
 
-  const handleFileSelect = async (file: File) => {
-    setIsLoading(true);
-    setUploadError(null);
+  const processFile = async (file: File) => {
+    setError(null);
+    setFileName(file.name);
     setCurrentFile(file);
 
     try {
+      // Step 1: Parse Excel
+      setStep('parsing');
       const { headers, rows } = await parseExcelFile(file);
-      
+
       if (rows.length === 0) {
         throw new Error('הקובץ לא מכיל שורות נתונים');
       }
@@ -61,565 +85,366 @@ export default function DashboardPage() {
       setExcelHeaders(headers);
       setExcelData(rows);
 
-      const mappings = suggestColumnMappings(headers);
-      setColumnMappings(mappings);
+      // Step 2: Send to AI for analysis
+      setStep('analyzing');
+      
+      const response = await fetch('/api/analyze-excel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          headers,
+          rows: rows.map(r => r.data),
+          businessInfo
+        }),
+      });
 
-      router.push('/dashboard/mapping');
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'שגיאה בעיבוד הקובץ');
-      setCurrentFile(null);
-    } finally {
-      setIsLoading(false);
+      const result: AnalysisResult = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'שגיאה בניתוח הקובץ');
+      }
+
+      setAnalysisResult(result);
+      setStep('done');
+
+      // Save to localStorage for the generate page
+      localStorage.setItem('extractedReceipts', JSON.stringify(result.receipts));
+      localStorage.setItem('analysisSummary', JSON.stringify(result.summary));
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה בעיבוד הקובץ');
+      setStep('error');
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, React.CSSProperties> = {
-      completed: { background: '#d1fae5', color: '#059669' },
-      processing: { background: '#fef3c7', color: '#d97706' },
-      failed: { background: '#fee2e2', color: '#dc2626' },
-    };
-    
-    const labels: Record<string, string> = {
-      completed: 'הושלם',
-      processing: 'בתהליך',
-      failed: 'נכשל',
-    };
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      setStep('uploading');
+      setTimeout(() => processFile(acceptedFiles[0]), 300);
+    }
+  }, []);
 
-    const icons: Record<string, React.ReactNode> = {
-      completed: <CheckCircle2 style={{ width: '14px', height: '14px' }} />,
-      processing: <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} />,
-      failed: <AlertCircle style={{ width: '14px', height: '14px' }} />,
-    };
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'text/csv': ['.csv'],
+    },
+    maxFiles: 1,
+    disabled: step !== 'idle' && step !== 'error',
+  });
 
-    return (
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '6px 12px',
-        borderRadius: '20px',
-        fontSize: '12px',
-        fontWeight: '600',
-        ...styles[status]
-      }}>
-        {icons[status]}
-        {labels[status]}
-      </span>
-    );
+  const resetUpload = () => {
+    setStep('idle');
+    setError(null);
+    setAnalysisResult(null);
+    setFileName('');
+    setCurrentFile(null);
+  };
+
+  const continueToGenerate = () => {
+    router.push('/dashboard/generate');
   };
 
   if (!isOnboardingComplete) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#f8fafc'
-      }}>
-        <Loader2 style={{ width: '32px', height: '32px', color: '#3b82f6', animation: 'spin 1s linear infinite' }} />
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A' }}>
+        <Loader2 style={{ width: '2rem', height: '2rem', color: '#3FC1C9', animation: 'spin 1s linear infinite' }} />
       </div>
     );
   }
 
+  const getStepMessage = () => {
+    switch (step) {
+      case 'uploading': return 'מעלה את הקובץ...';
+      case 'parsing': return 'קורא את הנתונים מהאקסל...';
+      case 'analyzing': return '🤖 AI מנתח את הקובץ ומחלץ קבלות...';
+      default: return '';
+    }
+  };
+
   return (
-    <div style={{ 
-      minHeight: '100vh',
-      background: '#f1f5f9',
-      fontFamily: "'Heebo', sans-serif",
-      direction: 'rtl'
-    }}>
+    <div style={{ minHeight: '100vh', background: '#0F172A', fontFamily: 'Heebo, sans-serif' }}>
       {/* Header */}
-      <header style={{
-        background: 'linear-gradient(135deg, #0f172a, #1e3a5f)',
-        padding: '20px 0',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50
-      }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
+      <header style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', position: 'sticky', top: 0, zIndex: 50, background: '#0F172A' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '1rem 1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                borderRadius: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <FileText style={{ width: '24px', height: '24px', color: 'white' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ width: '2.5rem', height: '2.5rem', background: 'linear-gradient(135deg, #3FC1C9 0%, #0F4C75 100%)', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FileText style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} />
               </div>
               <div>
-                <h1 style={{ fontSize: '22px', fontWeight: '700', color: 'white', margin: 0 }}>קבליט</h1>
-                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
+                <h1 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white' }}>קבליט</h1>
+                <p style={{ fontSize: '0.875rem', color: '#94A3B8' }}>
                   {businessInfo?.name || 'העסק שלי'}
                 </p>
               </div>
             </div>
-            
+
             <button
               onClick={() => router.push('/onboarding')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 20px',
-                background: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '10px',
-                color: 'white',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94A3B8', transition: 'all 0.2s', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.5rem 1rem', borderRadius: '0.5rem' }}
             >
-              <Settings style={{ width: '18px', height: '18px' }} />
-              <span>הגדרות</span>
+              <Settings style={{ width: '1.25rem', height: '1.25rem' }} />
+              הגדרות
             </button>
           </div>
         </div>
       </header>
 
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
-        {/* Welcome */}
+      <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '3rem 1.5rem' }}>
+        {/* Title */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ marginBottom: '32px' }}
+          style={{ textAlign: 'center', marginBottom: '2rem' }}
         >
-          <h2 style={{ fontSize: '28px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
-            שלום, {businessInfo?.name} 👋
+          <h2 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
+            הפקת קבלות חכמה
           </h2>
-          <p style={{ fontSize: '16px', color: '#64748b' }}>
-            העלו קובץ Excel כדי ליצור קבלות PDF
+          <p style={{ color: '#94A3B8', fontSize: '1.1rem' }}>
+            העלה קובץ Excel והבינה המלאכותית תחלץ את כל הנתונים אוטומטית
           </p>
         </motion.div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '32px' }}>
-          {/* Main Content */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Upload Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              style={{
-                background: 'white',
-                borderRadius: '20px',
-                padding: '32px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-                border: '1px solid #e2e8f0'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
-                <div style={{
-                  width: '56px',
-                  height: '56px',
-                  background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                  borderRadius: '16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Upload style={{ width: '28px', height: '28px', color: 'white' }} />
+        {/* Main Upload Area */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          style={{ maxWidth: '600px', margin: '0 auto' }}
+        >
+          <AnimatePresence mode="wait">
+            {/* Idle State - Upload Area */}
+            {(step === 'idle' || step === 'error') && (
+              <motion.div
+                key="upload"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+              >
+                <div
+                  {...getRootProps()}
+                  style={{
+                    border: `2px dashed ${isDragActive ? '#3FC1C9' : error ? '#EF4444' : '#475569'}`,
+                    borderRadius: '1rem',
+                    padding: '3rem 2rem',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    background: isDragActive ? 'rgba(63, 193, 201, 0.1)' : 'rgba(255, 255, 255, 0.02)',
+                  }}
+                >
+                  <input {...getInputProps()} />
+                  
+                  <div style={{ width: '5rem', height: '5rem', margin: '0 auto 1.5rem', background: 'rgba(63, 193, 201, 0.15)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FileSpreadsheet style={{ width: '2.5rem', height: '2.5rem', color: '#3FC1C9' }} />
+                  </div>
+
+                  {isDragActive ? (
+                    <p style={{ color: '#3FC1C9', fontSize: '1.25rem', fontWeight: '500' }}>
+                      שחרר את הקובץ כאן...
+                    </p>
+                  ) : (
+                    <>
+                      <p style={{ color: 'white', fontSize: '1.25rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+                        גרור קובץ Excel או לחץ לבחירה
+                      </p>
+                      <p style={{ color: '#64748B', fontSize: '0.9rem' }}>
+                        תומך ב-XLSX, XLS, CSV
+                      </p>
+                    </>
+                  )}
+
+                  {error && (
+                    <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                      <AlertCircle style={{ width: '1.25rem', height: '1.25rem', color: '#EF4444' }} />
+                      <span style={{ color: '#EF4444' }}>{error}</span>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
-                    הפקת קבלות חדשה
+
+                {/* Features */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '2rem' }}>
+                  {[
+                    { icon: Sparkles, text: 'זיהוי AI חכם' },
+                    { icon: CheckCircle2, text: 'ללא הגדרות' },
+                    { icon: FileText, text: 'קבלות מיידיות' },
+                  ].map((item, i) => (
+                    <div key={i} style={{ textAlign: 'center', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.75rem' }}>
+                      <item.icon style={{ width: '1.5rem', height: '1.5rem', color: '#3FC1C9', margin: '0 auto 0.5rem' }} />
+                      <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>{item.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Processing State */}
+            {(step === 'uploading' || step === 'parsing' || step === 'analyzing') && (
+              <motion.div
+                key="processing"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '1rem', padding: '3rem 2rem', textAlign: 'center' }}
+              >
+                <div style={{ width: '5rem', height: '5rem', margin: '0 auto 1.5rem', background: 'rgba(63, 193, 201, 0.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Loader2 style={{ width: '2.5rem', height: '2.5rem', color: '#3FC1C9', animation: 'spin 1s linear infinite' }} />
+                </div>
+
+                <p style={{ color: 'white', fontSize: '1.25rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+                  {getStepMessage()}
+                </p>
+                <p style={{ color: '#64748B', fontSize: '0.9rem' }}>
+                  {fileName}
+                </p>
+
+                {/* Progress Steps */}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '2rem' }}>
+                  {['העלאה', 'קריאה', 'ניתוח AI'].map((label, i) => {
+                    const stepIndex = ['uploading', 'parsing', 'analyzing'].indexOf(step);
+                    const isActive = stepIndex >= i;
+                    const isCurrent = stepIndex === i;
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{
+                          width: '2rem', height: '2rem', borderRadius: '50%',
+                          background: isActive ? '#3FC1C9' : '#334155',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 0.3s'
+                        }}>
+                          {isCurrent ? (
+                            <Loader2 style={{ width: '1rem', height: '1rem', color: 'white', animation: 'spin 1s linear infinite' }} />
+                          ) : isActive ? (
+                            <CheckCircle2 style={{ width: '1rem', height: '1rem', color: 'white' }} />
+                          ) : (
+                            <span style={{ color: '#64748B', fontSize: '0.75rem' }}>{i + 1}</span>
+                          )}
+                        </div>
+                        <span style={{ color: isActive ? '#3FC1C9' : '#64748B', fontSize: '0.85rem' }}>{label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Done State - Results */}
+            {step === 'done' && analysisResult && (
+              <motion.div
+                key="done"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '1rem', padding: '2rem' }}
+              >
+                {/* Success Header */}
+                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                  <div style={{ width: '4rem', height: '4rem', margin: '0 auto 1rem', background: 'rgba(16, 185, 129, 0.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CheckCircle2 style={{ width: '2rem', height: '2rem', color: '#10B981' }} />
+                  </div>
+                  <h3 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                    הניתוח הושלם!
                   </h3>
-                  <p style={{ fontSize: '14px', color: '#64748b', margin: '4px 0 0' }}>
-                    העלו קובץ Excel עם פרטי הלקוחות והעסקאות
+                  <p style={{ color: '#94A3B8' }}>
+                    AI זיהה {analysisResult.receipts.length} קבלות בקובץ
                   </p>
                 </div>
-              </div>
 
-              {/* Upload Zone */}
-              <div
-                style={{
-                  border: '3px dashed #cbd5e1',
-                  borderRadius: '16px',
-                  padding: '48px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  background: '#f8fafc'
-                }}
-                onClick={() => document.getElementById('file-input')?.click()}
-              >
-                <input
-                  id="file-input"
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  style={{ display: 'none' }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileSelect(file);
-                  }}
-                />
-                
-                {isLoading ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-                    <Loader2 style={{ width: '48px', height: '48px', color: '#3b82f6', animation: 'spin 1s linear infinite' }} />
-                    <p style={{ color: '#64748b', fontSize: '16px' }}>מעבד את הקובץ...</p>
+                {/* Summary Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '0.75rem', padding: '1rem', textAlign: 'center' }}>
+                    <p style={{ color: '#10B981', fontSize: '2rem', fontWeight: 'bold' }}>
+                      {analysisResult.summary.completeRows}
+                    </p>
+                    <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>קבלות מלאות</p>
                   </div>
-                ) : (
-                  <>
-                    <div style={{
-                      width: '80px',
-                      height: '80px',
-                      background: 'linear-gradient(135deg, #dbeafe, #ede9fe)',
-                      borderRadius: '20px',
+                  <div style={{ background: 'rgba(63, 193, 201, 0.1)', border: '1px solid rgba(63, 193, 201, 0.3)', borderRadius: '0.75rem', padding: '1rem', textAlign: 'center' }}>
+                    <p style={{ color: '#3FC1C9', fontSize: '2rem', fontWeight: 'bold' }}>
+                      ₪{analysisResult.summary.totalAmount.toLocaleString()}
+                    </p>
+                    <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>סה"כ</p>
+                  </div>
+                </div>
+
+                {/* Date Range */}
+                {analysisResult.summary.dateRange.from && (
+                  <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+                    <span style={{ color: '#64748B', fontSize: '0.85rem' }}>
+                      טווח תאריכים: {analysisResult.summary.dateRange.from} - {analysisResult.summary.dateRange.to}
+                    </span>
+                  </div>
+                )}
+
+                {/* Incomplete Rows Warning */}
+                {analysisResult.summary.incompleteRows > 0 && (
+                  <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '0.75rem', padding: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <AlertCircle style={{ width: '1.5rem', height: '1.5rem', color: '#F59E0B', flexShrink: 0 }} />
+                    <div>
+                      <p style={{ color: '#F59E0B', fontWeight: '500' }}>
+                        {analysisResult.summary.incompleteRows} שורות עם שדות חסרים
+                      </p>
+                      <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>
+                        תוכל להשלים אותם בשלב הבא
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <button
+                    onClick={resetUpload}
+                    style={{
+                      flex: 1,
+                      padding: '0.875rem 1.5rem',
+                      border: '2px solid #475569',
+                      borderRadius: '0.75rem',
+                      background: 'transparent',
+                      color: '#94A3B8',
+                      fontWeight: '500',
+                      cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      margin: '0 auto 20px'
-                    }}>
-                      <FileSpreadsheet style={{ width: '40px', height: '40px', color: '#3b82f6' }} />
-                    </div>
-                    <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#0f172a', marginBottom: '8px' }}>
-                      גררו קובץ Excel או CSV לכאן
-                    </h4>
-                    <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '16px' }}>
-                      או לחצו לבחירת קובץ מהמחשב
-                    </p>
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '8px 16px',
-                      background: '#e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                      color: '#64748b'
-                    }}>
-                      תומך ב-XLSX, XLS, CSV
-                    </span>
-                  </>
-                )}
-              </div>
-
-              {uploadError && (
-                <div style={{
-                  marginTop: '16px',
-                  padding: '12px 16px',
-                  background: '#fee2e2',
-                  borderRadius: '10px',
-                  color: '#dc2626',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <AlertCircle style={{ width: '18px', height: '18px' }} />
-                  {uploadError}
+                      gap: '0.5rem',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <X style={{ width: '1.25rem', height: '1.25rem' }} />
+                    בטל
+                  </button>
+                  <button
+                    onClick={continueToGenerate}
+                    style={{
+                      flex: 2,
+                      padding: '0.875rem 1.5rem',
+                      border: 'none',
+                      borderRadius: '0.75rem',
+                      background: 'linear-gradient(135deg, #3FC1C9 0%, #0F4C75 100%)',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      fontSize: '1rem',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    המשך ליצירת קבלות
+                    <ArrowLeft style={{ width: '1.25rem', height: '1.25rem' }} />
+                  </button>
                 </div>
-              )}
-
-              {/* Tips */}
-              <div style={{
-                marginTop: '24px',
-                padding: '20px',
-                background: 'linear-gradient(135deg, #eff6ff, #f5f3ff)',
-                borderRadius: '14px',
-                border: '1px solid #dbeafe'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                  <Sparkles style={{ width: '18px', height: '18px', color: '#8b5cf6' }} />
-                  <span style={{ fontWeight: '600', color: '#3b82f6' }}>מיפוי חכם עם AI</span>
-                </div>
-                <p style={{ fontSize: '14px', color: '#64748b', margin: 0, lineHeight: '1.6' }}>
-                  המערכת מזהה אוטומטית את העמודות בקובץ שלכם ומתאימה אותן לשדות הקבלה.
-                  תוכלו לשנות את המיפוי ידנית לפני יצירת הקבלות.
-                </p>
-              </div>
-            </motion.div>
-
-            {/* History */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              style={{
-                background: 'white',
-                borderRadius: '20px',
-                padding: '32px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-                border: '1px solid #e2e8f0'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    background: '#f1f5f9',
-                    borderRadius: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <Clock style={{ width: '24px', height: '24px', color: '#64748b' }} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
-                      היסטוריית הפקות
-                    </h3>
-                    <p style={{ fontSize: '14px', color: '#64748b', margin: '2px 0 0' }}>
-                      {batchRuns.length} הפקות
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {batchRuns.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '48px 0' }}>
-                  <FileSpreadsheet style={{ width: '56px', height: '56px', color: '#cbd5e1', margin: '0 auto 16px' }} />
-                  <p style={{ fontSize: '16px', color: '#64748b', marginBottom: '4px' }}>
-                    עדיין לא הפקתם קבלות
-                  </p>
-                  <p style={{ fontSize: '14px', color: '#94a3b8' }}>
-                    העלו קובץ כדי להתחיל
-                  </p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {batchRuns.slice(0, 5).map((run, index) => (
-                    <motion.div
-                      key={run.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '16px 20px',
-                        background: '#f8fafc',
-                        borderRadius: '12px',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{
-                          width: '44px',
-                          height: '44px',
-                          background: 'white',
-                          borderRadius: '10px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                        }}>
-                          <FileText style={{ width: '22px', height: '22px', color: '#3b82f6' }} />
-                        </div>
-                        <div>
-                          <p style={{ fontWeight: '600', color: '#0f172a', margin: 0 }}>
-                            {run.fileName}
-                          </p>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
-                            <span style={{ fontSize: '13px', color: '#64748b' }}>
-                              {format(new Date(run.createdAt), 'dd/MM/yyyy HH:mm')}
-                            </span>
-                            <span style={{ color: '#cbd5e1' }}>•</span>
-                            <span style={{ fontSize: '13px', color: '#64748b' }}>
-                              {run.successCount} קבלות
-                            </span>
-                            {run.errorCount > 0 && (
-                              <>
-                                <span style={{ color: '#cbd5e1' }}>•</span>
-                                <span style={{ fontSize: '13px', color: '#dc2626' }}>
-                                  {run.errorCount} שגיאות
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        {getStatusBadge(run.status)}
-                        {run.status === 'completed' && run.zipUrl && (
-                          <button style={{
-                            padding: '8px',
-                            background: '#eff6ff',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer'
-                          }}>
-                            <Download style={{ width: '18px', height: '18px', color: '#3b82f6' }} />
-                          </button>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          </div>
-
-          {/* Sidebar */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Business Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              style={{
-                background: 'white',
-                borderRadius: '20px',
-                padding: '24px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-                border: '1px solid #e2e8f0'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                <div style={{
-                  width: '44px',
-                  height: '44px',
-                  background: '#f1f5f9',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Building2 style={{ width: '22px', height: '22px', color: '#64748b' }} />
-                </div>
-                <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
-                  פרטי העסק
-                </h3>
-              </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>שם העסק</span>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>{businessInfo?.name || '-'}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>מספר עוסק</span>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>{businessInfo?.businessId || '-'}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>סוג עסק</span>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                    {businessInfo?.businessType === 'osek_patur' ? 'עוסק פטור' :
-                     businessInfo?.businessType === 'osek_morshe' ? 'עוסק מורשה' : 'חברה'}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => router.push('/onboarding')}
-                style={{
-                  width: '100%',
-                  marginTop: '20px',
-                  padding: '12px',
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '10px',
-                  color: '#3b82f6',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                ערוך פרטים
-              </button>
-            </motion.div>
-
-            {/* Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              style={{
-                background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                borderRadius: '20px',
-                padding: '24px',
-                color: 'white'
-              }}
-            >
-              <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '20px' }}>סטטיסטיקות</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div>
-                  <p style={{ fontSize: '36px', fontWeight: '800', margin: 0 }}>
-                    {batchRuns.reduce((sum, run) => sum + run.successCount, 0)}
-                  </p>
-                  <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>קבלות שנוצרו</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: '36px', fontWeight: '800', margin: 0 }}>{batchRuns.length}</p>
-                  <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>הפקות</p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              style={{
-                background: '#f8fafc',
-                borderRadius: '20px',
-                padding: '24px',
-                border: '1px solid #e2e8f0'
-              }}
-            >
-              <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', marginBottom: '16px' }}>
-                פעולות מהירות
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button
-                  onClick={() => document.getElementById('file-input')?.click()}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '14px 16px',
-                    background: 'white',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    width: '100%',
-                    textAlign: 'right'
-                  }}
-                >
-                  <Plus style={{ width: '20px', height: '20px', color: '#3b82f6' }} />
-                  <span style={{ fontWeight: '500', color: '#0f172a' }}>הפקה חדשה</span>
-                </button>
-                <button
-                  onClick={() => router.push('/onboarding')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '14px 16px',
-                    background: 'white',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    width: '100%',
-                    textAlign: 'right'
-                  }}
-                >
-                  <Settings style={{ width: '20px', height: '20px', color: '#64748b' }} />
-                  <span style={{ fontWeight: '500', color: '#0f172a' }}>הגדרות עסק</span>
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </main>
-
-      <style jsx global>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

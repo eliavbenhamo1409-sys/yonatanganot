@@ -12,6 +12,7 @@ import {
 } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 import { BusinessInfo, ReceiptData, ReceiptSettings } from '@/types';
+import JSZip from 'jszip';
 
 // רישום פונט עברי - נשתמש ב-Rubik מ-Google Fonts
 Font.register({
@@ -407,5 +408,128 @@ export function downloadPdf(blob: Blob, filename: string): void {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+// Interface for extracted receipts from AI
+interface ExtractedReceipt {
+  customerName: string;
+  amount: number;
+  date: string;
+  description: string;
+  paymentMethod: string;
+  notes: string;
+  rowNumber: number;
+  isComplete: boolean;
+  missingFields: string[];
+}
+
+/**
+ * המרת תאריך מפורמט DD/MM/YYYY ל-Date
+ */
+function parseReceiptDate(dateStr: string): Date {
+  if (!dateStr) return new Date();
+  
+  // Try DD/MM/YYYY
+  const parts = dateStr.split('/');
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const year = parseInt(parts[2], 10);
+    return new Date(year, month, day);
+  }
+  
+  // Try to parse as is
+  const parsed = new Date(dateStr);
+  if (!isNaN(parsed.getTime())) {
+    return parsed;
+  }
+  
+  return new Date();
+}
+
+/**
+ * יצירת ZIP עם כל הקבלות
+ */
+export async function createZipWithReceipts(
+  extractedReceipts: ExtractedReceipt[],
+  businessInfo: BusinessInfo,
+  settings: ReceiptSettings,
+  onProgress?: (progress: number) => void
+): Promise<Blob> {
+  const zip = new JSZip();
+  const total = extractedReceipts.length;
+  
+  for (let i = 0; i < extractedReceipts.length; i++) {
+    const extracted = extractedReceipts[i];
+    const receiptNumber = settings.startingNumber + i;
+    
+    // Convert ExtractedReceipt to ReceiptData
+    const receiptData: ReceiptData = {
+      id: crypto.randomUUID(),
+      receiptNumber,
+      customerName: extracted.customerName || 'לא ידוע',
+      amount: extracted.amount || 0,
+      date: parseReceiptDate(extracted.date),
+      description: extracted.description || 'שירות',
+      paymentMethod: extracted.paymentMethod,
+      notes: extracted.notes,
+      status: extracted.isComplete ? 'generated' : 'error',
+    };
+    
+    try {
+      // Generate PDF for this receipt
+      const pdfBlob = await generateSinglePdf(receiptData, businessInfo, settings);
+      
+      // Create filename - sanitize customer name for filename
+      const safeName = (extracted.customerName || 'receipt')
+        .replace(/[^א-תa-zA-Z0-9\s]/g, '')
+        .trim()
+        .substring(0, 30);
+      const filename = `receipt_${receiptNumber}_${safeName}.pdf`;
+      
+      // Add to ZIP
+      const arrayBuffer = await pdfBlob.arrayBuffer();
+      zip.file(filename, arrayBuffer);
+      
+    } catch (error) {
+      console.error(`Error generating receipt ${receiptNumber}:`, error);
+    }
+    
+    // Report progress
+    onProgress?.((i + 1) / total * 100);
+  }
+  
+  // Generate ZIP blob
+  const zipBlob = await zip.generateAsync({ 
+    type: 'blob',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 }
+  });
+  
+  return zipBlob;
+}
+
+/**
+ * יצירת PDF מ-extracted receipt ישירות
+ */
+export async function generateReceiptPDF(
+  extracted: ExtractedReceipt,
+  businessInfo: BusinessInfo,
+  settings: ReceiptSettings,
+  receiptNumber: number
+): Promise<Blob> {
+  const receiptData: ReceiptData = {
+    id: crypto.randomUUID(),
+    receiptNumber,
+    customerName: extracted.customerName || 'לא ידוע',
+    amount: extracted.amount || 0,
+    date: parseReceiptDate(extracted.date),
+    description: extracted.description || 'שירות',
+    paymentMethod: extracted.paymentMethod,
+    notes: extracted.notes,
+    status: 'generated',
+  };
+  
+  return generateSinglePdf(receiptData, businessInfo, settings);
 }
 
