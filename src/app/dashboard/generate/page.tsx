@@ -322,7 +322,7 @@ export default function GeneratePage() {
         )}
 
         {/* Receipts List */}
-        <div style={{ spaceY: '0.75rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {filteredReceipts.map((receipt, index) => {
             const actualIndex = receipts.indexOf(receipt);
             const isEditing = editingIndex === actualIndex;
