@@ -47,6 +47,7 @@ export default function WorksheetPage() {
   // Worksheet state
   const [rows, setRows] = useState<WorksheetRow[]>([]);
   const [editingCell, setEditingCell] = useState<{ rowId: string; field: 'paymentMethod' | 'amount' } | null>(null);
+  const [manualInputRow, setManualInputRow] = useState<string | null>(null);
   
   // Process uploaded file with AI
   const processFile = async (file: File) => {
@@ -477,9 +478,43 @@ export default function WorksheetPage() {
                     )}
                   </td>
                   <td style={{ padding: '0.75rem 1rem', position: 'relative' }}>
-                    {editingCell?.rowId === row.id && editingCell?.field === 'amount' ? (
-                      <div style={{ position: 'absolute', zIndex: 10, top: '100%', left: 0, background: '#1E293B', borderRadius: '0.5rem', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', minWidth: '120px' }}>
-                        <input type="number" placeholder="סכום..." style={{ width: '100%', padding: '0.625rem', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'white', textAlign: 'center' }} autoFocus onKeyDown={(e) => { if (e.key === 'Enter') { const val = parseFloat((e.target as HTMLInputElement).value); if (!isNaN(val)) updateRow(row.id, 'amount', val); } }} />
+                    {manualInputRow === row.id ? (
+                      /* Direct input mode */
+                      <input
+                        type="number"
+                        placeholder="הזן סכום..."
+                        autoFocus
+                        style={{ width: '100%', padding: '0.5rem', background: 'rgba(255,255,255,0.1)', border: '1px solid #8B5CF6', borderRadius: '0.5rem', color: 'white', textAlign: 'center', fontWeight: '600' }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const val = parseFloat((e.target as HTMLInputElement).value);
+                            if (!isNaN(val) && val > 0) {
+                              updateRow(row.id, 'amount', val);
+                            }
+                            setManualInputRow(null);
+                          } else if (e.key === 'Escape') {
+                            setManualInputRow(null);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val) && val > 0) {
+                            updateRow(row.id, 'amount', val);
+                          }
+                          setManualInputRow(null);
+                        }}
+                      />
+                    ) : editingCell?.rowId === row.id && editingCell?.field === 'amount' ? (
+                      /* Dropdown menu */
+                      <div style={{ position: 'absolute', zIndex: 10, top: '100%', left: 0, background: '#1E293B', borderRadius: '0.5rem', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', minWidth: '140px' }}>
+                        {/* Manual input option */}
+                        <button
+                          onClick={() => { setEditingCell(null); setManualInputRow(row.id); }}
+                          style={{ width: '100%', padding: '0.625rem 1rem', background: 'rgba(139, 92, 246, 0.2)', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#A78BFA', textAlign: 'center', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                        >
+                          ✏️ ידני
+                        </button>
+                        {/* Common amounts */}
                         {setupData.commonAmounts.map((amount) => (
                           <button key={amount} onClick={() => updateRow(row.id, 'amount', amount)} style={{ width: '100%', padding: '0.625rem', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'white', textAlign: 'center', cursor: 'pointer', fontWeight: '600' }}>
                             ₪{amount}
@@ -487,6 +522,7 @@ export default function WorksheetPage() {
                         ))}
                       </div>
                     ) : (
+                      /* Display button */
                       <button onClick={() => setEditingCell({ rowId: row.id, field: 'amount' })} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.5rem', background: row.amount ? 'rgba(255,255,255,0.05)' : 'rgba(234, 179, 8, 0.15)', border: `1px solid ${row.amount ? 'rgba(255,255,255,0.1)' : 'rgba(234, 179, 8, 0.3)'}`, color: row.amount ? 'white' : '#EAB308', cursor: 'pointer', fontSize: '0.85rem', width: '100%', textAlign: 'center', fontWeight: '600' }}>
                         {row.amount ? `₪${row.amount}` : 'בחר ▼'}
                       </button>
