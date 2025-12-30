@@ -351,10 +351,13 @@ export async function POST(request: NextRequest) {
       const chromium = (await import('@sparticuz/chromium')).default;
       puppeteer = await import('puppeteer-core');
       
+      const execPath = await chromium.executablePath();
+      console.log('[PDF API] Chromium path:', execPath);
+      
       browser = await puppeteer.default.launch({
         args: chromium.args,
         defaultViewport: { width: 1200, height: 800 },
-        executablePath: await chromium.executablePath(),
+        executablePath: execPath,
         headless: true,
       });
     } else {
