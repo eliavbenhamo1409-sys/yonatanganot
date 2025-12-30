@@ -120,49 +120,52 @@ export default function OnboardingPage() {
       background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
       fontFamily: "'Heebo', sans-serif",
       direction: 'rtl',
-      padding: '40px 20px'
+      padding: '20px 16px'
     }}>
       <div style={{ maxWidth: '720px', margin: '0 auto' }}>
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ textAlign: 'center', marginBottom: '40px' }}
+          style={{ textAlign: 'center', marginBottom: '24px' }}
         >
-          <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
+          <h1 style={{ fontSize: 'clamp(24px, 6vw, 32px)', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>
             הגדרת העסק שלך
           </h1>
-          <p style={{ fontSize: '16px', color: '#64748b' }}>
+          <p style={{ fontSize: '14px', color: '#64748b' }}>
             הזן את הפרטים פעם אחת והמערכת תזכור אותם
           </p>
         </motion.div>
 
-        {/* Progress Steps */}
-        <div style={{ marginBottom: '40px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+        {/* Progress Steps - Mobile Friendly */}
+        <div style={{ marginBottom: '24px', overflowX: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', minWidth: 'fit-content' }}>
             {steps.map((step, index) => (
               <div key={step.id} style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <div style={{
-                    width: '48px',
-                    height: '48px',
+                    width: '36px',
+                    height: '36px',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     background: currentStep >= step.id ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : '#e2e8f0',
                     color: currentStep >= step.id ? 'white' : '#94a3b8',
-                    transition: 'all 0.3s'
+                    transition: 'all 0.3s',
+                    flexShrink: 0
                   }}>
                     {currentStep > step.id ? (
-                      <Check style={{ width: '24px', height: '24px' }} />
+                      <Check style={{ width: '18px', height: '18px' }} />
                     ) : (
-                      <step.icon style={{ width: '24px', height: '24px' }} />
+                      <step.icon style={{ width: '18px', height: '18px' }} />
                     )}
                   </div>
-                  <span style={{
+                  <span className="step-label" style={{
                     fontWeight: '600',
-                    color: currentStep >= step.id ? '#0f172a' : '#94a3b8'
+                    fontSize: '13px',
+                    color: currentStep >= step.id ? '#0f172a' : '#94a3b8',
+                    display: 'none'
                   }}>
                     {step.title}
                   </span>
@@ -170,9 +173,9 @@ export default function OnboardingPage() {
                 
                 {index < steps.length - 1 && (
                   <div style={{
-                    width: '60px',
-                    height: '4px',
-                    margin: '0 16px',
+                    width: '40px',
+                    height: '3px',
+                    margin: '0 8px',
                     borderRadius: '2px',
                     background: currentStep > step.id ? 'linear-gradient(90deg, #3b82f6, #8b5cf6)' : '#e2e8f0',
                     transition: 'all 0.3s'
@@ -189,8 +192,8 @@ export default function OnboardingPage() {
           animate={{ opacity: 1, y: 0 }}
           style={{
             background: '#ffffff',
-            borderRadius: '24px',
-            padding: '40px',
+            borderRadius: '20px',
+            padding: 'clamp(20px, 5vw, 40px)',
             boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
             border: '1px solid #e2e8f0'
           }}
@@ -204,7 +207,7 @@ export default function OnboardingPage() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
               >
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
                   <div>
                     <label style={labelStyle}>
                       שם העסק <span style={{ color: '#ef4444' }}>*</span>

@@ -32,8 +32,8 @@ export default function LandingPage() {
         position: 'relative',
         overflow: 'hidden'
       }}>
-        {/* Background Glow */}
-        <div style={{
+        {/* Background Glow - Hidden on mobile */}
+        <div className="bg-glow-1" style={{
           position: 'absolute',
           top: '10%',
           right: '20%',
@@ -44,7 +44,7 @@ export default function LandingPage() {
           filter: 'blur(80px)',
           pointerEvents: 'none'
         }} />
-        <div style={{
+        <div className="bg-glow-2" style={{
           position: 'absolute',
           bottom: '20%',
           left: '20%',
@@ -57,57 +57,60 @@ export default function LandingPage() {
         }} />
 
         {/* Navigation */}
-        <nav style={{
+        <nav className="nav-container" style={{
           maxWidth: '1200px',
           margin: '0 auto',
-          padding: '24px 40px',
+          padding: '20px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           position: 'relative',
           zIndex: 10
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
-              width: '48px',
-              height: '48px',
+              width: '42px',
+              height: '42px',
               background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-              borderRadius: '12px',
+              borderRadius: '10px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              flexShrink: 0
             }}>
-              <FileText style={{ width: '24px', height: '24px', color: 'white' }} />
+              <FileText style={{ width: '22px', height: '22px', color: 'white' }} />
             </div>
-            <span style={{ fontSize: '24px', fontWeight: '700', color: 'white' }}>קבליט</span>
+            <span style={{ fontSize: '20px', fontWeight: '700', color: 'white' }}>קבליט</span>
           </div>
           
           <Link 
             href="/dashboard" 
+            className="nav-button"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              padding: '12px 24px',
+              gap: '6px',
+              padding: '10px 18px',
               background: 'rgba(255,255,255,0.1)',
               border: '1px solid rgba(255,255,255,0.2)',
               borderRadius: '50px',
               color: 'white',
               fontWeight: '500',
+              fontSize: '14px',
               textDecoration: 'none',
               transition: 'all 0.3s'
             }}
           >
-            <span>כניסה למערכת</span>
-            <ChevronLeft style={{ width: '16px', height: '16px' }} />
+            <span>כניסה</span>
+            <ChevronLeft style={{ width: '14px', height: '14px' }} />
           </Link>
         </nav>
 
         {/* Hero Content */}
-        <div style={{
+        <div className="hero-content" style={{
           maxWidth: '1200px',
           margin: '0 auto',
-          padding: '80px 40px 120px',
+          padding: '40px 20px 80px',
           textAlign: 'center',
           position: 'relative',
           zIndex: 10
@@ -116,22 +119,22 @@ export default function LandingPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            style={{ marginBottom: '32px' }}
+            style={{ marginBottom: '24px' }}
           >
-            <span style={{
+            <span className="hero-badge" style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '8px',
-              padding: '10px 20px',
+              gap: '6px',
+              padding: '8px 16px',
               background: 'rgba(251,191,36,0.15)',
               border: '1px solid rgba(251,191,36,0.3)',
               borderRadius: '50px',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: '500',
               color: '#fbbf24'
             }}>
-              <Sparkles style={{ width: '16px', height: '16px' }} />
-              חדש! מיפוי עמודות חכם עם AI
+              <Sparkles style={{ width: '14px', height: '14px' }} />
+              חדש! מיפוי חכם עם AI
             </span>
           </motion.div>
           
@@ -140,11 +143,12 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
+            className="hero-title"
             style={{
-              fontSize: 'clamp(40px, 6vw, 72px)',
+              fontSize: 'clamp(32px, 8vw, 72px)',
               fontWeight: '900',
-              lineHeight: '1.1',
-              marginBottom: '24px'
+              lineHeight: '1.15',
+              marginBottom: '20px'
             }}
           >
             <span style={{ color: 'white' }}>הפקת קבלות PDF</span>
@@ -163,15 +167,17 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
+            className="hero-subtitle"
             style={{
-              fontSize: '20px',
+              fontSize: 'clamp(16px, 4vw, 20px)',
               color: 'rgba(255,255,255,0.7)',
               maxWidth: '600px',
-              margin: '0 auto 48px',
-              lineHeight: '1.6'
+              margin: '0 auto 36px',
+              lineHeight: '1.6',
+              padding: '0 10px'
             }}
           >
-            העלו את קובץ האקסל שלכם ותנו למערכת לייצר קבלות PDF מקצועיות לכל שורה.
+            העלו את קובץ האקסל שלכם ותנו למערכת לייצר קבלות PDF מקצועיות.
             <span style={{ color: 'white', fontWeight: '600' }}> פשוט, מהיר ומאובטח.</span>
           </motion.p>
           
@@ -180,47 +186,51 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
+            className="cta-buttons"
             style={{
               display: 'flex',
-              gap: '16px',
+              gap: '12px',
               justifyContent: 'center',
-              flexWrap: 'wrap'
+              flexWrap: 'wrap',
+              padding: '0 10px'
             }}
           >
             <Link 
               href="/onboarding" 
+              className="cta-primary"
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
-                padding: '16px 32px',
+                gap: '10px',
+                padding: '14px 28px',
                 background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                borderRadius: '16px',
+                borderRadius: '14px',
                 color: 'white',
                 fontWeight: '700',
-                fontSize: '18px',
+                fontSize: '16px',
                 textDecoration: 'none',
                 boxShadow: '0 10px 40px rgba(59,130,246,0.4)',
                 transition: 'transform 0.3s'
               }}
             >
               <span>התחל עכשיו - חינם</span>
-              <ArrowLeft style={{ width: '20px', height: '20px' }} />
+              <ArrowLeft style={{ width: '18px', height: '18px' }} />
             </Link>
             
             <a 
               href="#how-it-works" 
+              className="cta-secondary"
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
-                padding: '16px 32px',
+                gap: '10px',
+                padding: '14px 28px',
                 background: 'transparent',
                 border: '2px solid rgba(255,255,255,0.3)',
-                borderRadius: '16px',
+                borderRadius: '14px',
                 color: 'white',
                 fontWeight: '700',
-                fontSize: '18px',
+                fontSize: '16px',
                 textDecoration: 'none',
                 transition: 'all 0.3s'
               }}
@@ -234,11 +244,13 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
+            className="stats-container"
             style={{
               display: 'flex',
               justifyContent: 'center',
-              gap: '80px',
-              marginTop: '100px'
+              gap: '40px',
+              marginTop: '60px',
+              flexWrap: 'wrap'
             }}
           >
             {[
@@ -246,9 +258,9 @@ export default function LandingPage() {
               { number: '+500', label: 'עסקים משתמשים' },
               { number: '99.9%', label: 'זמינות' },
             ].map((stat, index) => (
-              <div key={index} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '48px', fontWeight: '900', color: 'white' }}>{stat.number}</div>
-                <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>{stat.label}</div>
+              <div key={index} className="stat-item" style={{ textAlign: 'center', minWidth: '100px' }}>
+                <div style={{ fontSize: 'clamp(28px, 6vw, 48px)', fontWeight: '900', color: 'white' }}>{stat.number}</div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{stat.label}</div>
               </div>
             ))}
           </motion.div>
@@ -256,33 +268,33 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" style={{ padding: '120px 40px', background: '#ffffff' }}>
+      <section id="how-it-works" className="section-hiw" style={{ padding: '80px 20px', background: '#ffffff' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '50px' }}>
             <span style={{
               display: 'inline-block',
-              padding: '8px 20px',
+              padding: '8px 18px',
               background: '#dbeafe',
               color: '#1d4ed8',
               borderRadius: '50px',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: '700',
-              marginBottom: '16px'
+              marginBottom: '14px'
             }}>
               תהליך פשוט
             </span>
-            <h2 style={{ fontSize: '48px', fontWeight: '900', color: '#0f172a', marginBottom: '16px' }}>
+            <h2 className="section-title" style={{ fontSize: 'clamp(28px, 6vw, 48px)', fontWeight: '900', color: '#0f172a', marginBottom: '14px' }}>
               איך זה עובד?
             </h2>
-            <p style={{ fontSize: '20px', color: '#64748b' }}>
+            <p style={{ fontSize: 'clamp(16px, 4vw, 20px)', color: '#64748b' }}>
               3 צעדים פשוטים לקבלות מקצועיות
             </p>
           </div>
 
-          <div style={{
+          <div className="steps-grid" style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '32px'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '24px'
           }}>
             {[
               {
@@ -318,9 +330,9 @@ export default function LandingPage() {
                 transition={{ delay: index * 0.1 }}
                 style={{
                   position: 'relative',
-                  padding: '40px 32px',
+                  padding: '32px 24px',
                   background: '#ffffff',
-                  borderRadius: '24px',
+                  borderRadius: '20px',
                   border: '1px solid #e2e8f0',
                   boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
                   transition: 'all 0.3s'
@@ -328,39 +340,39 @@ export default function LandingPage() {
               >
                 <div style={{
                   position: 'absolute',
-                  top: '-16px',
-                  right: '32px',
-                  width: '40px',
-                  height: '40px',
+                  top: '-14px',
+                  right: '24px',
+                  width: '36px',
+                  height: '36px',
                   background: item.color,
-                  borderRadius: '12px',
+                  borderRadius: '10px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'white',
                   fontWeight: '700',
-                  fontSize: '14px'
+                  fontSize: '13px'
                 }}>
                   {item.step}
                 </div>
                 
                 <div style={{
-                  width: '64px',
-                  height: '64px',
+                  width: '56px',
+                  height: '56px',
                   background: item.bg,
-                  borderRadius: '16px',
+                  borderRadius: '14px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: '24px'
+                  marginBottom: '20px'
                 }}>
-                  <item.icon style={{ width: '32px', height: '32px', color: item.color }} />
+                  <item.icon style={{ width: '28px', height: '28px', color: item.color }} />
                 </div>
                 
-                <h3 style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a', marginBottom: '12px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', marginBottom: '10px' }}>
                   {item.title}
                 </h3>
-                <p style={{ fontSize: '16px', color: '#64748b', lineHeight: '1.6' }}>
+                <p style={{ fontSize: '15px', color: '#64748b', lineHeight: '1.6', margin: 0 }}>
                   {item.description}
                 </p>
               </motion.div>
@@ -370,33 +382,33 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section style={{ padding: '120px 40px', background: '#f8fafc' }}>
+      <section className="section-features" style={{ padding: '80px 20px', background: '#f8fafc' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '50px' }}>
             <span style={{
               display: 'inline-block',
-              padding: '8px 20px',
+              padding: '8px 18px',
               background: '#ede9fe',
               color: '#7c3aed',
               borderRadius: '50px',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: '700',
-              marginBottom: '16px'
+              marginBottom: '14px'
             }}>
               יתרונות
             </span>
-            <h2 style={{ fontSize: '48px', fontWeight: '900', color: '#0f172a', marginBottom: '16px' }}>
+            <h2 className="section-title" style={{ fontSize: 'clamp(28px, 6vw, 48px)', fontWeight: '900', color: '#0f172a', marginBottom: '14px' }}>
               למה קבליט?
             </h2>
-            <p style={{ fontSize: '20px', color: '#64748b' }}>
+            <p style={{ fontSize: 'clamp(16px, 4vw, 20px)', color: '#64748b' }}>
               מערכת שנבנתה במיוחד לעסקים קטנים בישראל
             </p>
           </div>
 
-          <div style={{
+          <div className="features-grid" style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '24px'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            gap: '16px'
           }}>
             {[
               { icon: Zap, title: "מהיר", desc: "קבלות תוך שניות", color: "#f59e0b", bg: "#fef3c7" },
@@ -411,30 +423,30 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
                 style={{
-                  padding: '32px',
+                  padding: '24px 16px',
                   background: '#ffffff',
-                  borderRadius: '20px',
+                  borderRadius: '16px',
                   border: '1px solid #e2e8f0',
                   textAlign: 'center',
                   transition: 'all 0.3s'
                 }}
               >
                 <div style={{
-                  width: '56px',
-                  height: '56px',
+                  width: '48px',
+                  height: '48px',
                   background: feature.bg,
-                  borderRadius: '14px',
+                  borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  margin: '0 auto 20px'
+                  margin: '0 auto 14px'
                 }}>
-                  <feature.icon style={{ width: '28px', height: '28px', color: feature.color }} />
+                  <feature.icon style={{ width: '24px', height: '24px', color: feature.color }} />
                 </div>
-                <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', marginBottom: '8px' }}>
+                <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#0f172a', marginBottom: '6px' }}>
                   {feature.title}
                 </h3>
-                <p style={{ fontSize: '14px', color: '#64748b' }}>{feature.desc}</p>
+                <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>{feature.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -442,36 +454,36 @@ export default function LandingPage() {
       </section>
 
       {/* Security */}
-      <section style={{ padding: '120px 40px', background: '#0f172a' }}>
+      <section className="section-security" style={{ padding: '80px 20px', background: '#0f172a' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{
+          <div className="security-grid" style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '80px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '40px',
             alignItems: 'center'
           }}>
             <div>
               <span style={{
                 display: 'inline-block',
-                padding: '8px 20px',
+                padding: '8px 18px',
                 background: 'rgba(16,185,129,0.2)',
                 color: '#10b981',
                 borderRadius: '50px',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: '700',
-                marginBottom: '24px'
+                marginBottom: '20px'
               }}>
                 אבטחה מלאה
               </span>
-              <h2 style={{ fontSize: '48px', fontWeight: '900', color: 'white', marginBottom: '16px' }}>
+              <h2 className="section-title-dark" style={{ fontSize: 'clamp(28px, 6vw, 40px)', fontWeight: '900', color: 'white', marginBottom: '12px' }}>
                 אבטחה ופרטיות
               </h2>
-              <h3 style={{ fontSize: '24px', fontWeight: '700', color: '#10b981', marginBottom: '40px' }}>
+              <h3 style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: '700', color: '#10b981', marginBottom: '30px' }}>
                 ברמה הגבוהה ביותר
               </h3>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {[
-                  "הקבצים שלך לא נשמרים בשרתים שלנו",
+                  "הקבצים שלך לא נשמרים בשרתים",
                   "עיבוד מתבצע בדפדפן שלך בלבד",
                   "מחיקה אוטומטית אחרי הורדה",
                   "ללא מעקב או שיתוף נתונים"
@@ -479,12 +491,12 @@ export default function LandingPage() {
                   <li key={index} style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '16px',
-                    marginBottom: '20px'
+                    gap: '12px',
+                    marginBottom: '16px'
                   }}>
                     <div style={{
-                      width: '32px',
-                      height: '32px',
+                      width: '28px',
+                      height: '28px',
                       background: 'rgba(16,185,129,0.2)',
                       borderRadius: '50%',
                       display: 'flex',
@@ -492,51 +504,51 @@ export default function LandingPage() {
                       justifyContent: 'center',
                       flexShrink: 0
                     }}>
-                      <CheckCircle2 style={{ width: '18px', height: '18px', color: '#10b981' }} />
+                      <CheckCircle2 style={{ width: '16px', height: '16px', color: '#10b981' }} />
                     </div>
-                    <span style={{ fontSize: '18px', color: 'rgba(255,255,255,0.8)' }}>{item}</span>
+                    <span style={{ fontSize: '15px', color: 'rgba(255,255,255,0.8)' }}>{item}</span>
                   </li>
                 ))}
               </ul>
             </div>
             
             <div style={{
-              padding: '48px',
+              padding: '32px',
               background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,182,212,0.1))',
               border: '1px solid rgba(16,185,129,0.2)',
-              borderRadius: '24px',
+              borderRadius: '20px',
               textAlign: 'center'
             }}>
               <div style={{
-                width: '96px',
-                height: '96px',
+                width: '72px',
+                height: '72px',
                 background: 'linear-gradient(135deg, #10b981, #06b6d4)',
-                borderRadius: '24px',
+                borderRadius: '18px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 32px'
+                margin: '0 auto 24px'
               }}>
-                <Lock style={{ width: '48px', height: '48px', color: 'white' }} />
+                <Lock style={{ width: '36px', height: '36px', color: 'white' }} />
               </div>
               <div style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                padding: '10px 20px',
+                padding: '8px 16px',
                 background: 'rgba(16,185,129,0.2)',
                 borderRadius: '50px',
-                marginBottom: '24px'
+                marginBottom: '20px'
               }}>
                 <div style={{
-                  width: '10px',
-                  height: '10px',
+                  width: '8px',
+                  height: '8px',
                   background: '#10b981',
                   borderRadius: '50%'
                 }} />
-                <span style={{ fontWeight: '700', color: '#10b981' }}>עיבוד מקומי מאובטח</span>
+                <span style={{ fontWeight: '700', color: '#10b981', fontSize: '14px' }}>עיבוד מקומי מאובטח</span>
               </div>
-              <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.6' }}>
+              <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.6', margin: 0 }}>
                 כל העיבוד מתבצע בדפדפן שלך.
                 <br />
                 <span style={{ color: 'white', fontWeight: '600' }}>הנתונים שלך נשארים אצלך.</span>
@@ -547,27 +559,27 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section style={{ padding: '120px 40px', background: '#ffffff' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+      <section className="section-faq" style={{ padding: '80px 20px', background: '#ffffff' }}>
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <span style={{
               display: 'inline-block',
-              padding: '8px 20px',
+              padding: '8px 18px',
               background: '#cffafe',
               color: '#0891b2',
               borderRadius: '50px',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: '700',
-              marginBottom: '16px'
+              marginBottom: '14px'
             }}>
               שאלות נפוצות
             </span>
-            <h2 style={{ fontSize: '48px', fontWeight: '900', color: '#0f172a' }}>
+            <h2 className="section-title" style={{ fontSize: 'clamp(28px, 6vw, 40px)', fontWeight: '900', color: '#0f172a' }}>
               יש לכם שאלות?
             </h2>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {[
               { q: "האם המידע שלי מאובטח?", a: "כן! כל העיבוד מתבצע בדפדפן שלך. הקבצים לא נשלחים לשרתים חיצוניים." },
               { q: "באיזה פורמט צריך להיות האקסל?", a: "אנחנו תומכים ב-Excel (.xlsx, .xls) וב-CSV עם כותרות בשורה הראשונה." },
@@ -577,16 +589,16 @@ export default function LandingPage() {
               <div
                 key={index}
                 style={{
-                  padding: '24px 32px',
+                  padding: '20px 24px',
                   background: '#f8fafc',
                   border: '1px solid #e2e8f0',
-                  borderRadius: '16px'
+                  borderRadius: '14px'
                 }}
               >
-                <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a', marginBottom: '8px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', marginBottom: '6px' }}>
                   {faq.q}
                 </h3>
-                <p style={{ fontSize: '16px', color: '#64748b', margin: 0 }}>{faq.a}</p>
+                <p style={{ fontSize: '14px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>{faq.a}</p>
               </div>
             ))}
           </div>
@@ -594,12 +606,12 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section style={{ padding: '120px 40px', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '48px', fontWeight: '900', color: 'white', marginBottom: '24px' }}>
+      <section className="section-cta" style={{ padding: '80px 20px', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>
+        <div style={{ maxWidth: '700px', margin: '0 auto', textAlign: 'center' }}>
+          <h2 className="cta-title" style={{ fontSize: 'clamp(28px, 6vw, 40px)', fontWeight: '900', color: 'white', marginBottom: '20px' }}>
             מוכנים להתחיל?
           </h2>
-          <p style={{ fontSize: '20px', color: 'rgba(255,255,255,0.8)', marginBottom: '48px' }}>
+          <p style={{ fontSize: 'clamp(16px, 4vw, 18px)', color: 'rgba(255,255,255,0.8)', marginBottom: '36px' }}>
             הצטרפו לאלפי עסקים שכבר חוסכים שעות עבודה
           </p>
           <Link 
@@ -607,51 +619,82 @@ export default function LandingPage() {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '12px',
-              padding: '20px 48px',
+              gap: '10px',
+              padding: '16px 36px',
               background: 'white',
               color: '#3b82f6',
-              borderRadius: '16px',
+              borderRadius: '14px',
               fontWeight: '700',
-              fontSize: '20px',
+              fontSize: '17px',
               textDecoration: 'none',
               boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
             }}
           >
             <span>צור קבלות עכשיו</span>
-            <ArrowLeft style={{ width: '24px', height: '24px' }} />
+            <ArrowLeft style={{ width: '20px', height: '20px' }} />
           </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer style={{ padding: '40px', background: '#0f172a' }}>
-        <div style={{
+      <footer style={{ padding: '30px 20px', background: '#0f172a' }}>
+        <div className="footer-content" style={{
           maxWidth: '1200px',
           margin: '0 auto',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
-              width: '40px',
-              height: '40px',
+              width: '36px',
+              height: '36px',
               background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-              borderRadius: '10px',
+              borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <FileText style={{ width: '20px', height: '20px', color: 'white' }} />
+              <FileText style={{ width: '18px', height: '18px', color: 'white' }} />
             </div>
-            <span style={{ fontSize: '18px', fontWeight: '700', color: 'white' }}>קבליט</span>
+            <span style={{ fontSize: '16px', fontWeight: '700', color: 'white' }}>קבליט</span>
           </div>
-          <p style={{ color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+          <p style={{ color: 'rgba(255,255,255,0.4)', margin: 0, fontSize: '14px' }}>
             © 2025 קבליט. כל הזכויות שמורות.
           </p>
         </div>
       </footer>
+
+      {/* Mobile CSS */}
+      <style jsx global>{`
+        @media (max-width: 768px) {
+          .bg-glow-1, .bg-glow-2 {
+            display: none;
+          }
+          .stats-container {
+            gap: 24px !important;
+          }
+          .stat-item {
+            min-width: 80px !important;
+          }
+          .footer-content {
+            flex-direction: column !important;
+            text-align: center !important;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .cta-buttons {
+            flex-direction: column !important;
+          }
+          .cta-buttons a {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

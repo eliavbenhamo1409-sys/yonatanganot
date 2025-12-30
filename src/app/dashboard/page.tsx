@@ -193,18 +193,18 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '3rem 1.5rem' }}>
+      <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '2rem 1rem' }}>
         {/* Title */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ textAlign: 'center', marginBottom: '2rem' }}
+          style={{ textAlign: 'center', marginBottom: '1.5rem' }}
         >
-          <h2 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
+          <h2 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
             הפקת קבלות חכמה
           </h2>
-          <p style={{ color: '#94A3B8', fontSize: '1.1rem' }}>
-            העלה קובץ Excel והבינה המלאכותית תחלץ את כל הנתונים אוטומטית
+          <p style={{ color: '#94A3B8', fontSize: 'clamp(0.9rem, 3vw, 1.1rem)' }}>
+            העלה קובץ Excel והבינה המלאכותית תחלץ את כל הנתונים
           </p>
         </motion.div>
 
@@ -229,7 +229,7 @@ export default function DashboardPage() {
                   style={{
                     border: `2px dashed ${isDragActive ? '#3FC1C9' : error ? '#EF4444' : '#475569'}`,
                     borderRadius: '1rem',
-                    padding: '3rem 2rem',
+                    padding: '2rem 1.5rem',
                     textAlign: 'center',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
@@ -238,20 +238,20 @@ export default function DashboardPage() {
                 >
                   <input {...getInputProps()} />
                   
-                  <div style={{ width: '5rem', height: '5rem', margin: '0 auto 1.5rem', background: 'rgba(63, 193, 201, 0.15)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <FileSpreadsheet style={{ width: '2.5rem', height: '2.5rem', color: '#3FC1C9' }} />
+                  <div style={{ width: '4rem', height: '4rem', margin: '0 auto 1rem', background: 'rgba(63, 193, 201, 0.15)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FileSpreadsheet style={{ width: '2rem', height: '2rem', color: '#3FC1C9' }} />
                   </div>
 
                   {isDragActive ? (
-                    <p style={{ color: '#3FC1C9', fontSize: '1.25rem', fontWeight: '500' }}>
+                    <p style={{ color: '#3FC1C9', fontSize: '1.1rem', fontWeight: '500', margin: 0 }}>
                       שחרר את הקובץ כאן...
                     </p>
                   ) : (
                     <>
-                      <p style={{ color: 'white', fontSize: '1.25rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+                      <p style={{ color: 'white', fontSize: 'clamp(1rem, 4vw, 1.25rem)', fontWeight: '500', marginBottom: '0.3rem' }}>
                         גרור קובץ Excel או לחץ לבחירה
                       </p>
-                      <p style={{ color: '#64748B', fontSize: '0.9rem' }}>
+                      <p style={{ color: '#64748B', fontSize: '0.85rem', margin: 0 }}>
                         תומך ב-XLSX, XLS, CSV
                       </p>
                     </>
@@ -266,15 +266,15 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Features */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '1.5rem' }}>
                   {[
                     { icon: Sparkles, text: 'זיהוי AI חכם' },
                     { icon: CheckCircle2, text: 'ללא הגדרות' },
                     { icon: FileText, text: 'קבלות מיידיות' },
                   ].map((item, i) => (
-                    <div key={i} style={{ textAlign: 'center', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.75rem' }}>
-                      <item.icon style={{ width: '1.5rem', height: '1.5rem', color: '#3FC1C9', margin: '0 auto 0.5rem' }} />
-                      <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>{item.text}</p>
+                    <div key={i} style={{ textAlign: 'center', padding: '0.75rem 0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.75rem' }}>
+                      <item.icon style={{ width: '1.25rem', height: '1.25rem', color: '#3FC1C9', margin: '0 auto 0.3rem' }} />
+                      <p style={{ color: '#94A3B8', fontSize: '0.75rem', margin: 0 }}>{item.text}</p>
                     </div>
                   ))}
                 </div>
@@ -302,28 +302,28 @@ export default function DashboardPage() {
                 </p>
 
                 {/* Progress Steps */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
                   {['העלאה', 'קריאה', 'ניתוח AI'].map((label, i) => {
                     const stepIndex = ['uploading', 'parsing', 'analyzing'].indexOf(step);
                     const isActive = stepIndex >= i;
                     const isCurrent = stepIndex === i;
                     return (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <div style={{
-                          width: '2rem', height: '2rem', borderRadius: '50%',
+                          width: '1.75rem', height: '1.75rem', borderRadius: '50%',
                           background: isActive ? '#3FC1C9' : '#334155',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           transition: 'all 0.3s'
                         }}>
                           {isCurrent ? (
-                            <Loader2 style={{ width: '1rem', height: '1rem', color: 'white', animation: 'spin 1s linear infinite' }} />
+                            <Loader2 style={{ width: '0.9rem', height: '0.9rem', color: 'white', animation: 'spin 1s linear infinite' }} />
                           ) : isActive ? (
-                            <CheckCircle2 style={{ width: '1rem', height: '1rem', color: 'white' }} />
+                            <CheckCircle2 style={{ width: '0.9rem', height: '0.9rem', color: 'white' }} />
                           ) : (
-                            <span style={{ color: '#64748B', fontSize: '0.75rem' }}>{i + 1}</span>
+                            <span style={{ color: '#64748B', fontSize: '0.7rem' }}>{i + 1}</span>
                           )}
                         </div>
-                        <span style={{ color: isActive ? '#3FC1C9' : '#64748B', fontSize: '0.85rem' }}>{label}</span>
+                        <span style={{ color: isActive ? '#3FC1C9' : '#64748B', fontSize: '0.8rem' }}>{label}</span>
                       </div>
                     );
                   })}
