@@ -21,6 +21,9 @@ export interface BusinessInfo {
   vatRate: number; // אחוז מע"מ (17 בד"כ)
 }
 
+// סוג תבנית עיצוב
+export type ReceiptTemplateType = 'classic' | 'modern' | 'minimal';
+
 // הגדרות תבנית קבלה
 export interface ReceiptSettings {
   startingNumber: number; // מספר קבלה מתחיל
@@ -30,6 +33,7 @@ export interface ReceiptSettings {
   currencySymbol: '₪' | '$' | '€';
   includeVat: boolean;
   templateId: string;
+  templateType: ReceiptTemplateType; // תבנית עיצוב
 }
 
 // שורה בקובץ אקסל
@@ -153,4 +157,3 @@ export const FIELD_KEYWORDS: Record<ReceiptField, string[]> = {
     'מסמך', 'סוג מסמך', 'מע"מ', 'מעמ', 'vat', 'document', 'type'
   ],
 };
-

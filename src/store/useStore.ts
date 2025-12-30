@@ -6,7 +6,8 @@ import {
   ColumnMapping, 
   ExcelRow, 
   BatchRun,
-  ReceiptTemplate 
+  ReceiptTemplate,
+  ReceiptTemplateType
 } from '@/types';
 
 interface AppState {
@@ -67,6 +68,7 @@ const defaultReceiptSettings: ReceiptSettings = {
   currencySymbol: '₪',
   includeVat: false,
   templateId: 'default',
+  templateType: 'classic',
 };
 
 const defaultTemplates: ReceiptTemplate[] = [
@@ -176,4 +178,3 @@ export const useStore = create<AppState>()(
     }
   )
 );
-

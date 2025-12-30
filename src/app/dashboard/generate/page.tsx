@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
-import { createZipWithReceipts } from '@/utils/pdfGenerator';
+import { createZipWithReceipts, ReceiptTemplate } from '@/utils/pdfGenerator';
 import {
   FileText,
   Download,
@@ -190,7 +190,8 @@ export default function GeneratePage() {
         (progress) => {
           setGenerationProgress(progress);
           console.log('[Generate] Progress:', progress);
-        }
+        },
+        receiptSettings.templateType || 'classic'
       );
 
       console.log('[Generate] ZIP created, size:', zipBlob.size);
