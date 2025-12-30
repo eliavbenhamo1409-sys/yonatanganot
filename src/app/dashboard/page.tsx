@@ -16,11 +16,12 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  ChevronLeft,
   Eye,
-  Trash2,
   FileSpreadsheet,
   Building2,
+  Upload,
+  Sparkles,
+  ArrowLeft,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -39,7 +40,6 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Redirect to onboarding if not complete
   useEffect(() => {
     if (!isOnboardingComplete) {
       router.push('/onboarding');
@@ -61,11 +61,9 @@ export default function DashboardPage() {
       setExcelHeaders(headers);
       setExcelData(rows);
 
-      // Generate suggested column mappings
       const mappings = suggestColumnMappings(headers);
       setColumnMappings(mappings);
 
-      // Navigate to column mapping
       router.push('/dashboard/mapping');
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'שגיאה בעיבוד הקובץ');
@@ -76,54 +74,87 @@ export default function DashboardPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return (
-          <span className="badge badge-success flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" />
-            הושלם
-          </span>
-        );
-      case 'processing':
-        return (
-          <span className="badge badge-warning flex items-center gap-1">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            בתהליך
-          </span>
-        );
-      case 'failed':
-        return (
-          <span className="badge badge-error flex items-center gap-1">
-            <AlertCircle className="w-3 h-3" />
-            נכשל
-          </span>
-        );
-      default:
-        return null;
-    }
+    const styles: Record<string, React.CSSProperties> = {
+      completed: { background: '#d1fae5', color: '#059669' },
+      processing: { background: '#fef3c7', color: '#d97706' },
+      failed: { background: '#fee2e2', color: '#dc2626' },
+    };
+    
+    const labels: Record<string, string> = {
+      completed: 'הושלם',
+      processing: 'בתהליך',
+      failed: 'נכשל',
+    };
+
+    const icons: Record<string, React.ReactNode> = {
+      completed: <CheckCircle2 style={{ width: '14px', height: '14px' }} />,
+      processing: <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} />,
+      failed: <AlertCircle style={{ width: '14px', height: '14px' }} />,
+    };
+
+    return (
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '6px 12px',
+        borderRadius: '20px',
+        fontSize: '12px',
+        fontWeight: '600',
+        ...styles[status]
+      }}>
+        {icons[status]}
+        {labels[status]}
+      </span>
+    );
   };
 
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[var(--color-primary)] animate-spin" />
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f8fafc'
+      }}>
+        <Loader2 style={{ width: '32px', height: '32px', color: '#3b82f6', animation: 'spin 1s linear infinite' }} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--color-gray-50)] via-white to-[var(--color-primary-50)]">
+    <div style={{ 
+      minHeight: '100vh',
+      background: '#f1f5f9',
+      fontFamily: "'Heebo', sans-serif",
+      direction: 'rtl'
+    }}>
       {/* Header */}
-      <header className="bg-white border-b border-[var(--color-gray-200)] sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-light)] rounded-xl flex items-center justify-center">
-                <FileText className="w-6 h-6 text-white" />
+      <header style={{
+        background: 'linear-gradient(135deg, #0f172a, #1e3a5f)',
+        padding: '20px 0',
+        position: 'sticky',
+        top: 0,
+        zIndex: 50
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                borderRadius: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <FileText style={{ width: '24px', height: '24px', color: 'white' }} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-[var(--color-gray-900)]">קבליט</h1>
-                <p className="text-sm text-[var(--color-gray-500)]">
+                <h1 style={{ fontSize: '22px', fontWeight: '700', color: 'white', margin: 0 }}>קבליט</h1>
+                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
                   {businessInfo?.name || 'העסק שלי'}
                 </p>
               </div>
@@ -131,88 +162,210 @@ export default function DashboardPage() {
             
             <button
               onClick={() => router.push('/onboarding')}
-              className="flex items-center gap-2 text-[var(--color-gray-600)] hover:text-[var(--color-primary)] transition-colors"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '10px',
+                color: 'white',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
             >
-              <Settings className="w-5 h-5" />
-              <span className="hidden sm:inline">הגדרות</span>
+              <Settings style={{ width: '18px', height: '18px' }} />
+              <span>הגדרות</span>
             </button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
-        {/* Welcome Section */}
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
+        {/* Welcome */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          style={{ marginBottom: '32px' }}
         >
-          <h2 className="text-2xl font-bold text-[var(--color-gray-900)] mb-2">
+          <h2 style={{ fontSize: '28px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
             שלום, {businessInfo?.name} 👋
           </h2>
-          <p className="text-[var(--color-gray-600)]">
-            העלו קובץ Excel או CSV כדי להתחיל להפיק קבלות
+          <p style={{ fontSize: '16px', color: '#64748b' }}>
+            העלו קובץ Excel כדי ליצור קבלות PDF
           </p>
         </motion.div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Content - Upload */}
-          <div className="lg:col-span-2 space-y-6">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '32px' }}>
+          {/* Main Content */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Upload Card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white rounded-2xl shadow-lg p-6 border border-[var(--color-gray-100)]"
+              style={{
+                background: 'white',
+                borderRadius: '20px',
+                padding: '32px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                border: '1px solid #e2e8f0'
+              }}
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-[var(--color-primary-50)] rounded-xl flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-[var(--color-primary)]" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Upload style={{ width: '28px', height: '28px', color: 'white' }} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-[var(--color-gray-900)]">הפקה חדשה</h3>
-                  <p className="text-sm text-[var(--color-gray-500)]">
-                    העלו קובץ עם פרטי הלקוחות והעסקאות
+                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
+                    הפקת קבלות חדשה
+                  </h3>
+                  <p style={{ fontSize: '14px', color: '#64748b', margin: '4px 0 0' }}>
+                    העלו קובץ Excel עם פרטי הלקוחות והעסקאות
                   </p>
                 </div>
               </div>
 
-              <FileUpload
-                onFileSelect={handleFileSelect}
-                isLoading={isLoading}
-                error={uploadError}
-                acceptedFile={currentFile}
-              />
+              {/* Upload Zone */}
+              <div
+                style={{
+                  border: '3px dashed #cbd5e1',
+                  borderRadius: '16px',
+                  padding: '48px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  background: '#f8fafc'
+                }}
+                onClick={() => document.getElementById('file-input')?.click()}
+              >
+                <input
+                  id="file-input"
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileSelect(file);
+                  }}
+                />
+                
+                {isLoading ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                    <Loader2 style={{ width: '48px', height: '48px', color: '#3b82f6', animation: 'spin 1s linear infinite' }} />
+                    <p style={{ color: '#64748b', fontSize: '16px' }}>מעבד את הקובץ...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{
+                      width: '80px',
+                      height: '80px',
+                      background: 'linear-gradient(135deg, #dbeafe, #ede9fe)',
+                      borderRadius: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 20px'
+                    }}>
+                      <FileSpreadsheet style={{ width: '40px', height: '40px', color: '#3b82f6' }} />
+                    </div>
+                    <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#0f172a', marginBottom: '8px' }}>
+                      גררו קובץ Excel או CSV לכאן
+                    </h4>
+                    <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '16px' }}>
+                      או לחצו לבחירת קובץ מהמחשב
+                    </p>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '8px 16px',
+                      background: '#e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      color: '#64748b'
+                    }}>
+                      תומך ב-XLSX, XLS, CSV
+                    </span>
+                  </>
+                )}
+              </div>
 
-              {/* Quick Tips */}
-              <div className="mt-6 p-4 bg-[var(--color-gray-50)] rounded-xl">
-                <h4 className="text-sm font-medium text-[var(--color-gray-700)] mb-2">
-                  💡 טיפים לקובץ מושלם:
-                </h4>
-                <ul className="text-xs text-[var(--color-gray-600)] space-y-1">
-                  <li>• שורה ראשונה צריכה להכיל כותרות עמודות</li>
-                  <li>• ודאו שיש עמודות: שם לקוח, סכום, תאריך</li>
-                  <li>• תאריכים בפורמט DD/MM/YYYY או YYYY-MM-DD</li>
-                  <li>• סכומים כמספרים (ללא סימני מטבע)</li>
-                </ul>
+              {uploadError && (
+                <div style={{
+                  marginTop: '16px',
+                  padding: '12px 16px',
+                  background: '#fee2e2',
+                  borderRadius: '10px',
+                  color: '#dc2626',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <AlertCircle style={{ width: '18px', height: '18px' }} />
+                  {uploadError}
+                </div>
+              )}
+
+              {/* Tips */}
+              <div style={{
+                marginTop: '24px',
+                padding: '20px',
+                background: 'linear-gradient(135deg, #eff6ff, #f5f3ff)',
+                borderRadius: '14px',
+                border: '1px solid #dbeafe'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <Sparkles style={{ width: '18px', height: '18px', color: '#8b5cf6' }} />
+                  <span style={{ fontWeight: '600', color: '#3b82f6' }}>מיפוי חכם עם AI</span>
+                </div>
+                <p style={{ fontSize: '14px', color: '#64748b', margin: 0, lineHeight: '1.6' }}>
+                  המערכת מזהה אוטומטית את העמודות בקובץ שלכם ומתאימה אותן לשדות הקבלה.
+                  תוכלו לשנות את המיפוי ידנית לפני יצירת הקבלות.
+                </p>
               </div>
             </motion.div>
 
-            {/* Batch History */}
+            {/* History */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white rounded-2xl shadow-lg p-6 border border-[var(--color-gray-100)]"
+              style={{
+                background: 'white',
+                borderRadius: '20px',
+                padding: '32px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                border: '1px solid #e2e8f0'
+              }}
             >
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[var(--color-primary-50)] rounded-xl flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-[var(--color-primary)]" />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: '#f1f5f9',
+                    borderRadius: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Clock style={{ width: '24px', height: '24px', color: '#64748b' }} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-[var(--color-gray-900)]">היסטוריית הפקות</h3>
-                    <p className="text-sm text-[var(--color-gray-500)]">
+                    <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
+                      היסטוריית הפקות
+                    </h3>
+                    <p style={{ fontSize: '14px', color: '#64748b', margin: '2px 0 0' }}>
                       {batchRuns.length} הפקות
                     </p>
                   </div>
@@ -220,41 +373,62 @@ export default function DashboardPage() {
               </div>
 
               {batchRuns.length === 0 ? (
-                <div className="text-center py-12">
-                  <FileSpreadsheet className="w-12 h-12 mx-auto text-[var(--color-gray-300)] mb-4" />
-                  <p className="text-[var(--color-gray-500)]">
+                <div style={{ textAlign: 'center', padding: '48px 0' }}>
+                  <FileSpreadsheet style={{ width: '56px', height: '56px', color: '#cbd5e1', margin: '0 auto 16px' }} />
+                  <p style={{ fontSize: '16px', color: '#64748b', marginBottom: '4px' }}>
                     עדיין לא הפקתם קבלות
                   </p>
-                  <p className="text-sm text-[var(--color-gray-400)]">
+                  <p style={{ fontSize: '14px', color: '#94a3b8' }}>
                     העלו קובץ כדי להתחיל
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {batchRuns.slice(0, 5).map((run, index) => (
                     <motion.div
                       key={run.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="flex items-center justify-between p-4 bg-[var(--color-gray-50)] rounded-xl hover:bg-[var(--color-gray-100)] transition-colors"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '16px 20px',
+                        background: '#f8fafc',
+                        borderRadius: '12px',
+                        transition: 'all 0.2s'
+                      }}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                          <FileText className="w-5 h-5 text-[var(--color-primary)]" />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{
+                          width: '44px',
+                          height: '44px',
+                          background: 'white',
+                          borderRadius: '10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                        }}>
+                          <FileText style={{ width: '22px', height: '22px', color: '#3b82f6' }} />
                         </div>
                         <div>
-                          <p className="font-medium text-[var(--color-gray-900)]">
+                          <p style={{ fontWeight: '600', color: '#0f172a', margin: 0 }}>
                             {run.fileName}
                           </p>
-                          <div className="flex items-center gap-3 text-xs text-[var(--color-gray-500)]">
-                            <span>{format(new Date(run.createdAt), 'dd/MM/yyyy HH:mm')}</span>
-                            <span>•</span>
-                            <span>{run.successCount} קבלות</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
+                            <span style={{ fontSize: '13px', color: '#64748b' }}>
+                              {format(new Date(run.createdAt), 'dd/MM/yyyy HH:mm')}
+                            </span>
+                            <span style={{ color: '#cbd5e1' }}>•</span>
+                            <span style={{ fontSize: '13px', color: '#64748b' }}>
+                              {run.successCount} קבלות
+                            </span>
                             {run.errorCount > 0 && (
                               <>
-                                <span>•</span>
-                                <span className="text-[var(--color-error)]">
+                                <span style={{ color: '#cbd5e1' }}>•</span>
+                                <span style={{ fontSize: '13px', color: '#dc2626' }}>
                                   {run.errorCount} שגיאות
                                 </span>
                               </>
@@ -263,16 +437,19 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         {getStatusBadge(run.status)}
                         {run.status === 'completed' && run.zipUrl && (
-                          <button className="p-2 text-[var(--color-gray-400)] hover:text-[var(--color-primary)] transition-colors">
-                            <Download className="w-5 h-5" />
+                          <button style={{
+                            padding: '8px',
+                            background: '#eff6ff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer'
+                          }}>
+                            <Download style={{ width: '18px', height: '18px', color: '#3b82f6' }} />
                           </button>
                         )}
-                        <button className="p-2 text-[var(--color-gray-400)] hover:text-[var(--color-primary)] transition-colors">
-                          <Eye className="w-5 h-5" />
-                        </button>
                       </div>
                     </motion.div>
                   ))}
@@ -282,33 +459,49 @@ export default function DashboardPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Business Info Card */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Business Card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-white rounded-2xl shadow-lg p-6 border border-[var(--color-gray-100)]"
+              style={{
+                background: 'white',
+                borderRadius: '20px',
+                padding: '24px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                border: '1px solid #e2e8f0'
+              }}
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-[var(--color-primary-50)] rounded-xl flex items-center justify-center">
-                  <Building2 className="w-6 h-6 text-[var(--color-primary)]" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  background: '#f1f5f9',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Building2 style={{ width: '22px', height: '22px', color: '#64748b' }} />
                 </div>
-                <h3 className="font-bold text-[var(--color-gray-900)]">פרטי העסק</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
+                  פרטי העסק
+                </h3>
               </div>
               
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[var(--color-gray-500)]">שם העסק</span>
-                  <span className="font-medium">{businessInfo?.name || '-'}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '14px', color: '#64748b' }}>שם העסק</span>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>{businessInfo?.name || '-'}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[var(--color-gray-500)]">מספר עוסק</span>
-                  <span className="font-medium">{businessInfo?.businessId || '-'}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '14px', color: '#64748b' }}>מספר עוסק</span>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>{businessInfo?.businessId || '-'}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[var(--color-gray-500)]">סוג עסק</span>
-                  <span className="font-medium">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '14px', color: '#64748b' }}>סוג עסק</span>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
                     {businessInfo?.businessType === 'osek_patur' ? 'עוסק פטור' :
                      businessInfo?.businessType === 'osek_morshe' ? 'עוסק מורשה' : 'חברה'}
                   </span>
@@ -317,56 +510,116 @@ export default function DashboardPage() {
 
               <button
                 onClick={() => router.push('/onboarding')}
-                className="w-full mt-4 py-2 text-sm text-[var(--color-primary)] hover:bg-[var(--color-primary-50)] rounded-lg transition-colors"
+                style={{
+                  width: '100%',
+                  marginTop: '20px',
+                  padding: '12px',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '10px',
+                  color: '#3b82f6',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
               >
                 ערוך פרטים
               </button>
             </motion.div>
 
-            {/* Stats Card */}
+            {/* Stats */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-dark)] rounded-2xl shadow-lg p-6 text-white"
+              style={{
+                background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                borderRadius: '20px',
+                padding: '24px',
+                color: 'white'
+              }}
             >
-              <h3 className="font-bold mb-4">סטטיסטיקות</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '20px' }}>סטטיסטיקות</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div>
-                  <p className="text-3xl font-bold">
+                  <p style={{ fontSize: '36px', fontWeight: '800', margin: 0 }}>
                     {batchRuns.reduce((sum, run) => sum + run.successCount, 0)}
                   </p>
-                  <p className="text-sm text-white/70">קבלות שנוצרו</p>
+                  <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>קבלות שנוצרו</p>
                 </div>
                 <div>
-                  <p className="text-3xl font-bold">{batchRuns.length}</p>
-                  <p className="text-sm text-white/70">הפקות</p>
+                  <p style={{ fontSize: '36px', fontWeight: '800', margin: 0 }}>{batchRuns.length}</p>
+                  <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>הפקות</p>
                 </div>
               </div>
             </motion.div>
 
-            {/* Help Card */}
+            {/* Quick Actions */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="bg-[var(--color-gray-50)] rounded-2xl p-6 border border-[var(--color-gray-200)]"
+              style={{
+                background: '#f8fafc',
+                borderRadius: '20px',
+                padding: '24px',
+                border: '1px solid #e2e8f0'
+              }}
             >
-              <h3 className="font-bold text-[var(--color-gray-900)] mb-3">
-                צריכים עזרה?
+              <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', marginBottom: '16px' }}>
+                פעולות מהירות
               </h3>
-              <p className="text-sm text-[var(--color-gray-600)] mb-4">
-                יש לנו מדריכים ותמיכה זמינה
-              </p>
-              <button className="w-full btn btn-secondary text-sm">
-                צור קשר
-                <ChevronLeft className="w-4 h-4" />
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button
+                  onClick={() => document.getElementById('file-input')?.click()}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '14px 16px',
+                    background: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    width: '100%',
+                    textAlign: 'right'
+                  }}
+                >
+                  <Plus style={{ width: '20px', height: '20px', color: '#3b82f6' }} />
+                  <span style={{ fontWeight: '500', color: '#0f172a' }}>הפקה חדשה</span>
+                </button>
+                <button
+                  onClick={() => router.push('/onboarding')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '14px 16px',
+                    background: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    width: '100%',
+                    textAlign: 'right'
+                  }}
+                >
+                  <Settings style={{ width: '20px', height: '20px', color: '#64748b' }} />
+                  <span style={{ fontWeight: '500', color: '#0f172a' }}>הגדרות עסק</span>
+                </button>
+              </div>
             </motion.div>
           </div>
         </div>
       </main>
+
+      <style jsx global>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
-

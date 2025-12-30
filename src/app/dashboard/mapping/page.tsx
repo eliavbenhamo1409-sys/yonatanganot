@@ -17,6 +17,7 @@ import {
   Eye,
   FileText,
   ArrowRightLeft,
+  X,
 } from 'lucide-react';
 
 export default function ColumnMappingPage() {
@@ -37,14 +38,12 @@ export default function ColumnMappingPage() {
     errors: { row: number; field: string; message: string }[];
   } | null>(null);
 
-  // Redirect if no file
   useEffect(() => {
     if (!currentFile || excelHeaders.length === 0) {
       router.push('/dashboard');
     }
   }, [currentFile, excelHeaders, router]);
 
-  // Validate when mappings change
   useEffect(() => {
     if (excelData.length > 0 && columnMappings.length > 0) {
       const { validRows, invalidRows } = validateAllRows(excelData, columnMappings);
@@ -73,25 +72,22 @@ export default function ColumnMappingPage() {
   };
 
   const handleContinue = () => {
-    // Update excelData with validation results
     const { validRows, invalidRows } = validateAllRows(excelData, columnMappings);
     setExcelData([...validRows, ...invalidRows]);
-    
     router.push('/dashboard/generate');
   };
 
   const getConfidenceColor = (confidence: number | undefined) => {
-    if (!confidence) return 'bg-[var(--color-gray-200)]';
-    if (confidence >= 0.8) return 'bg-[var(--color-success)]';
-    if (confidence >= 0.5) return 'bg-[var(--color-warning)]';
-    return 'bg-[var(--color-error)]';
+    if (!confidence) return '#e2e8f0';
+    if (confidence >= 0.8) return '#10b981';
+    if (confidence >= 0.5) return '#f59e0b';
+    return '#ef4444';
   };
 
   const getMappedField = (excelColumn: string): ColumnMapping | undefined => {
     return columnMappings.find((m) => m.excelColumn === excelColumn);
   };
 
-  // Check if required fields are mapped
   const requiredFields: ReceiptField[] = ['customerName', 'amount', 'date'];
   const mappedRequiredFields = requiredFields.filter((field) =>
     columnMappings.some((m) => m.receiptField === field)
@@ -107,238 +103,344 @@ export default function ColumnMappingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--color-gray-50)] via-white to-[var(--color-primary-50)]">
+    <div style={{ 
+      minHeight: '100vh',
+      background: '#f1f5f9',
+      fontFamily: "'Heebo', sans-serif",
+      direction: 'rtl'
+    }}>
       {/* Header */}
-      <header className="bg-white border-b border-[var(--color-gray-200)] sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+      <header style={{
+        background: 'white',
+        borderBottom: '1px solid #e2e8f0',
+        position: 'sticky',
+        top: 0,
+        zIndex: 50
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="p-2 text-[var(--color-gray-500)] hover:text-[var(--color-gray-700)] transition-colors"
+                style={{
+                  padding: '8px',
+                  background: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight style={{ width: '20px', height: '20px', color: '#64748b' }} />
               </button>
               <div>
-                <h1 className="text-xl font-bold text-[var(--color-gray-900)]">
+                <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
                   מיפוי עמודות
                 </h1>
-                <p className="text-sm text-[var(--color-gray-500)]">
+                <p style={{ fontSize: '14px', color: '#64748b', margin: '4px 0 0' }}>
                   {currentFile.name}
                 </p>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <button
                 onClick={() => setShowPreview(!showPreview)}
-                className="flex items-center gap-2 px-4 py-2 text-[var(--color-gray-600)] hover:text-[var(--color-primary)] hover:bg-[var(--color-gray-100)] rounded-lg transition-colors"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 16px',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  fontWeight: '500'
+                }}
               >
-                <Eye className="w-5 h-5" />
-                <span className="hidden sm:inline">תצוגה מקדימה</span>
+                <Eye style={{ width: '18px', height: '18px' }} />
+                <span>תצוגה מקדימה</span>
               </button>
               
               <button
                 onClick={handleContinue}
                 disabled={!canContinue}
-                className={`btn ${canContinue ? 'btn-primary' : 'bg-[var(--color-gray-300)] text-[var(--color-gray-500)] cursor-not-allowed'}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 24px',
+                  background: canContinue ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : '#e2e8f0',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: canContinue ? 'pointer' : 'not-allowed',
+                  color: canContinue ? 'white' : '#94a3b8',
+                  fontWeight: '600',
+                  fontSize: '15px'
+                }}
               >
                 המשך להפקה
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft style={{ width: '18px', height: '18px' }} />
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
         {/* AI Badge */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-center gap-2 mb-6"
+          style={{ textAlign: 'center', marginBottom: '24px' }}
         >
-          <span className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm text-sm">
-            <Sparkles className="w-4 h-4 text-[var(--color-primary)]" />
-            <span className="text-[var(--color-gray-600)]">
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 20px',
+            background: 'linear-gradient(135deg, #eff6ff, #f5f3ff)',
+            borderRadius: '50px',
+            fontSize: '14px',
+            border: '1px solid #dbeafe'
+          }}>
+            <Sparkles style={{ width: '16px', height: '16px', color: '#8b5cf6' }} />
+            <span style={{ color: '#3b82f6', fontWeight: '500' }}>
               המערכת זיהתה אוטומטית את העמודות - בדקו ותקנו לפי הצורך
             </span>
           </span>
         </motion.div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px' }}>
           {/* Mapping Section */}
-          <div className="lg:col-span-2">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-2xl shadow-lg p-6 border border-[var(--color-gray-100)]"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-[var(--color-primary-50)] rounded-xl flex items-center justify-center">
-                  <ArrowRightLeft className="w-6 h-6 text-[var(--color-primary)]" />
-                </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              background: 'white',
+              borderRadius: '20px',
+              padding: '28px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+              border: '1px solid #e2e8f0'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                background: 'linear-gradient(135deg, #dbeafe, #ede9fe)',
+                borderRadius: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ArrowRightLeft style={{ width: '24px', height: '24px', color: '#3b82f6' }} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a', margin: 0 }}>
+                  התאמת עמודות
+                </h2>
+                <p style={{ fontSize: '14px', color: '#64748b', margin: '4px 0 0' }}>
+                  חברו בין העמודות באקסל לשדות הקבלה
+                </p>
+              </div>
+            </div>
+
+            {/* Missing Fields Warning */}
+            {missingRequiredFields.length > 0 && (
+              <div style={{
+                marginBottom: '20px',
+                padding: '16px',
+                background: '#fef3c7',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px'
+              }}>
+                <AlertCircle style={{ width: '20px', height: '20px', color: '#d97706', flexShrink: 0 }} />
                 <div>
-                  <h2 className="font-bold text-[var(--color-gray-900)]">התאמת עמודות</h2>
-                  <p className="text-sm text-[var(--color-gray-500)]">
-                    חברו בין העמודות באקסל לשדות הקבלה
+                  <p style={{ fontWeight: '600', color: '#d97706', margin: 0 }}>שדות חובה חסרים</p>
+                  <p style={{ fontSize: '14px', color: '#78716c', margin: '4px 0 0' }}>
+                    יש למפות את השדות הבאים: {missingRequiredFields.map((f) => RECEIPT_FIELDS[f].label).join(', ')}
                   </p>
                 </div>
               </div>
+            )}
 
-              {/* Required Fields Warning */}
-              {missingRequiredFields.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="mb-6 p-4 bg-[var(--color-warning-light)] rounded-xl flex items-start gap-3"
-                >
-                  <AlertCircle className="w-5 h-5 text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-[var(--color-warning)]">שדות חובה חסרים</p>
-                    <p className="text-sm text-[var(--color-gray-600)]">
-                      יש למפות את השדות הבאים: {missingRequiredFields.map((f) => RECEIPT_FIELDS[f].label).join(', ')}
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Mapping Table */}
-              <div className="space-y-3">
-                {excelHeaders.map((header, index) => {
-                  const mapping = getMappedField(header);
-                  const isRequired = mapping && requiredFields.includes(mapping.receiptField);
-                  
-                  return (
-                    <motion.div
-                      key={header}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-colors ${
-                        mapping?.receiptField !== 'ignore'
-                          ? 'bg-[var(--color-primary-50)] border-[var(--color-primary-100)]'
-                          : 'bg-[var(--color-gray-50)] border-[var(--color-gray-200)]'
-                      }`}
-                    >
-                      {/* Excel Column */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-[var(--color-gray-900)] truncate">
-                            {header}
+            {/* Mapping Items */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {excelHeaders.map((header, index) => {
+                const mapping = getMappedField(header);
+                const isMapped = mapping?.receiptField !== 'ignore';
+                
+                return (
+                  <motion.div
+                    key={header}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '16px',
+                      padding: '16px 20px',
+                      borderRadius: '14px',
+                      border: `2px solid ${isMapped ? '#3b82f6' : '#e2e8f0'}`,
+                      background: isMapped ? '#eff6ff' : '#f8fafc',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {/* Excel Column */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontWeight: '600', color: '#0f172a' }}>{header}</span>
+                        {mapping && !mapping.isManual && mapping.confidence && (
+                          <span style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '12px',
+                            color: '#64748b'
+                          }}>
+                            <span style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              background: getConfidenceColor(mapping.confidence)
+                            }} />
+                            {Math.round(mapping.confidence * 100)}%
                           </span>
-                          {mapping && !mapping.isManual && mapping.confidence && (
-                            <div className="flex items-center gap-1">
-                              <div
-                                className={`w-2 h-2 rounded-full ${getConfidenceColor(mapping.confidence)}`}
-                              />
-                              <span className="text-xs text-[var(--color-gray-500)]">
-                                {Math.round(mapping.confidence * 100)}%
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-xs text-[var(--color-gray-500)] truncate">
-                          דוגמה: {excelData[0]?.data[header] || '-'}
-                        </p>
-                      </div>
-
-                      {/* Arrow */}
-                      <ArrowLeft className="w-5 h-5 text-[var(--color-gray-400)] flex-shrink-0" />
-
-                      {/* Receipt Field Selector */}
-                      <div className="flex-1">
-                        <select
-                          value={mapping?.receiptField || 'ignore'}
-                          onChange={(e) => handleMappingChange(header, e.target.value as ReceiptField)}
-                          className={`w-full p-3 rounded-lg border-2 transition-colors ${
-                            mapping?.receiptField !== 'ignore'
-                              ? 'border-[var(--color-primary)] bg-white'
-                              : 'border-[var(--color-gray-200)] bg-white'
-                          }`}
-                        >
-                          <option value="ignore">-- התעלם --</option>
-                          {Object.entries(RECEIPT_FIELDS)
-                            .filter(([key]) => key !== 'ignore')
-                            .map(([key, field]) => (
-                              <option key={key} value={key}>
-                                {field.label} {field.required ? '*' : ''}
-                              </option>
-                            ))}
-                        </select>
-                      </div>
-
-                      {/* Status Icon */}
-                      <div className="flex-shrink-0">
-                        {mapping?.receiptField !== 'ignore' ? (
-                          <CheckCircle2 className="w-6 h-6 text-[var(--color-success)]" />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full border-2 border-[var(--color-gray-300)]" />
                         )}
                       </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </div>
+                      <p style={{ fontSize: '13px', color: '#94a3b8', margin: '4px 0 0' }}>
+                        דוגמה: {String(excelData[0]?.data[header] ?? '-').substring(0, 30)}
+                      </p>
+                    </div>
 
-          {/* Sidebar - Validation Results */}
-          <div className="space-y-6">
+                    {/* Arrow */}
+                    <ArrowLeft style={{ width: '20px', height: '20px', color: '#cbd5e1', flexShrink: 0 }} />
+
+                    {/* Selector */}
+                    <select
+                      value={mapping?.receiptField || 'ignore'}
+                      onChange={(e) => handleMappingChange(header, e.target.value as ReceiptField)}
+                      style={{
+                        width: '180px',
+                        padding: '12px 16px',
+                        borderRadius: '10px',
+                        border: `2px solid ${isMapped ? '#3b82f6' : '#e2e8f0'}`,
+                        background: 'white',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#0f172a',
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="ignore">-- התעלם --</option>
+                      {Object.entries(RECEIPT_FIELDS)
+                        .filter(([key]) => key !== 'ignore')
+                        .map(([key, field]) => (
+                          <option key={key} value={key}>
+                            {field.label} {field.required ? '*' : ''}
+                          </option>
+                        ))}
+                    </select>
+
+                    {/* Status */}
+                    <div style={{ flexShrink: 0 }}>
+                      {isMapped ? (
+                        <CheckCircle2 style={{ width: '24px', height: '24px', color: '#10b981' }} />
+                      ) : (
+                        <div style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          border: '2px solid #cbd5e1'
+                        }} />
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+
+          {/* Sidebar */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Validation Summary */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white rounded-2xl shadow-lg p-6 border border-[var(--color-gray-100)]"
+              style={{
+                background: 'white',
+                borderRadius: '20px',
+                padding: '24px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                border: '1px solid #e2e8f0'
+              }}
             >
-              <h3 className="font-bold text-[var(--color-gray-900)] mb-4">סיכום בדיקה</h3>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', marginBottom: '16px' }}>
+                סיכום בדיקה
+              </h3>
               
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-[var(--color-success-light)] rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-[var(--color-success)]" />
-                    <span className="text-[var(--color-success)]">שורות תקינות</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '14px 16px',
+                  background: '#d1fae5',
+                  borderRadius: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CheckCircle2 style={{ width: '20px', height: '20px', color: '#059669' }} />
+                    <span style={{ color: '#059669', fontWeight: '500' }}>שורות תקינות</span>
                   </div>
-                  <span className="font-bold text-[var(--color-success)]">
+                  <span style={{ fontWeight: '700', color: '#059669', fontSize: '18px' }}>
                     {validationResults?.validCount ?? 0}
                   </span>
                 </div>
                 
                 {(validationResults?.invalidCount ?? 0) > 0 && (
-                  <div className="flex items-center justify-between p-3 bg-[var(--color-error-light)] rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-[var(--color-error)]" />
-                      <span className="text-[var(--color-error)]">שורות עם שגיאות</span>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '14px 16px',
+                    background: '#fee2e2',
+                    borderRadius: '12px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <AlertCircle style={{ width: '20px', height: '20px', color: '#dc2626' }} />
+                      <span style={{ color: '#dc2626', fontWeight: '500' }}>שורות עם שגיאות</span>
                     </div>
-                    <span className="font-bold text-[var(--color-error)]">
+                    <span style={{ fontWeight: '700', color: '#dc2626', fontSize: '18px' }}>
                       {validationResults?.invalidCount}
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Error Details */}
               {validationResults && validationResults.errors.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-[var(--color-gray-200)]">
-                  <h4 className="text-sm font-medium text-[var(--color-gray-700)] mb-2">
+                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#64748b', marginBottom: '12px' }}>
                     פירוט שגיאות:
                   </h4>
-                  <div className="max-h-48 overflow-y-auto space-y-2">
+                  <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                     {validationResults.errors.slice(0, 10).map((err, i) => (
-                      <div
-                        key={i}
-                        className="text-xs p-2 bg-[var(--color-gray-50)] rounded"
-                      >
-                        <span className="text-[var(--color-gray-500)]">שורה {err.row}:</span>{' '}
-                        <span className="text-[var(--color-error)]">{err.message}</span>
+                      <div key={i} style={{
+                        padding: '8px 12px',
+                        background: '#f8fafc',
+                        borderRadius: '8px',
+                        marginBottom: '6px',
+                        fontSize: '13px'
+                      }}>
+                        <span style={{ color: '#64748b' }}>שורה {err.row}:</span>{' '}
+                        <span style={{ color: '#dc2626' }}>{err.message}</span>
                       </div>
                     ))}
-                    {validationResults.errors.length > 10 && (
-                      <p className="text-xs text-[var(--color-gray-500)]">
-                        ועוד {validationResults.errors.length - 10} שגיאות...
-                      </p>
-                    )}
                   </div>
                 </div>
               )}
@@ -349,27 +451,40 @@ export default function ColumnMappingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-[var(--color-gray-50)] rounded-2xl p-6 border border-[var(--color-gray-200)]"
+              style={{
+                background: '#f8fafc',
+                borderRadius: '20px',
+                padding: '24px',
+                border: '1px solid #e2e8f0'
+              }}
             >
-              <h3 className="font-bold text-[var(--color-gray-900)] mb-4 flex items-center gap-2">
-                <Info className="w-5 h-5" />
+              <h3 style={{
+                fontSize: '16px',
+                fontWeight: '700',
+                color: '#0f172a',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <Info style={{ width: '18px', height: '18px' }} />
                 מקרא
               </h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[var(--color-success)]" />
-                  <span className="text-[var(--color-gray-600)]">התאמה גבוהה (80%+)</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10b981' }} />
+                  <span style={{ fontSize: '14px', color: '#64748b' }}>התאמה גבוהה (80%+)</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[var(--color-warning)]" />
-                  <span className="text-[var(--color-gray-600)]">התאמה בינונית (50-80%)</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#f59e0b' }} />
+                  <span style={{ fontSize: '14px', color: '#64748b' }}>התאמה בינונית (50-80%)</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[var(--color-error)]" />
-                  <span className="text-[var(--color-gray-600)]">התאמה נמוכה (&lt;50%)</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }} />
+                  <span style={{ fontSize: '14px', color: '#64748b' }}>התאמה נמוכה (&lt;50%)</span>
                 </div>
-                <div className="flex items-center gap-2 pt-2 border-t border-[var(--color-gray-300)]">
-                  <span className="text-[var(--color-gray-600)]">* = שדה חובה</span>
+                <div style={{ paddingTop: '12px', borderTop: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '14px', color: '#64748b' }}>* = שדה חובה</span>
                 </div>
               </div>
             </motion.div>
@@ -383,7 +498,16 @@ export default function ColumnMappingPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.5)',
+                zIndex: 100,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '24px'
+              }}
               onClick={() => setShowPreview(false)}
             >
               <motion.div
@@ -391,38 +515,75 @@ export default function ColumnMappingPage() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+                style={{
+                  background: 'white',
+                  borderRadius: '24px',
+                  maxWidth: '600px',
+                  width: '100%',
+                  maxHeight: '80vh',
+                  overflow: 'hidden',
+                  boxShadow: '0 25px 50px rgba(0,0,0,0.2)'
+                }}
               >
-                <div className="p-6 border-b border-[var(--color-gray-200)]">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold">תצוגה מקדימה - קבלה לדוגמה</h2>
-                    <button
-                      onClick={() => setShowPreview(false)}
-                      className="p-2 hover:bg-[var(--color-gray-100)] rounded-lg transition-colors"
-                    >
-                      ✕
-                    </button>
-                  </div>
+                <div style={{
+                  padding: '24px',
+                  borderBottom: '1px solid #e2e8f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>
+                    תצוגה מקדימה - קבלה לדוגמה
+                  </h2>
+                  <button
+                    onClick={() => setShowPreview(false)}
+                    style={{
+                      padding: '8px',
+                      background: '#f1f5f9',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <X style={{ width: '20px', height: '20px', color: '#64748b' }} />
+                  </button>
                 </div>
                 
-                <div className="p-6 overflow-y-auto max-h-[60vh]">
-                  {/* Mini Receipt Preview */}
-                  <div className="receipt-preview">
-                    <div className="text-center mb-4">
-                      <div className="inline-block bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg">
-                        <span className="font-bold">קבלה מס׳ 1</span>
-                      </div>
+                <div style={{ padding: '24px', overflowY: 'auto', maxHeight: '60vh' }}>
+                  <div style={{
+                    background: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+                  }}>
+                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                      <span style={{
+                        display: 'inline-block',
+                        background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                        color: 'white',
+                        padding: '10px 24px',
+                        borderRadius: '10px',
+                        fontWeight: '700'
+                      }}>
+                        קבלה מס׳ 1
+                      </span>
                     </div>
                     
-                    <div className="space-y-3 text-sm">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {excelData[0] && columnMappings
                         .filter((m) => m.receiptField !== 'ignore')
                         .map((mapping) => (
-                          <div key={mapping.excelColumn} className="flex justify-between border-b border-[var(--color-gray-100)] pb-2">
-                            <span className="font-medium">
+                          <div key={mapping.excelColumn} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            padding: '12px 0',
+                            borderBottom: '1px solid #f1f5f9'
+                          }}>
+                            <span style={{ fontWeight: '600', color: '#0f172a' }}>
                               {RECEIPT_FIELDS[mapping.receiptField].label}:
                             </span>
-                            <span className="text-[var(--color-gray-600)]">
+                            <span style={{ color: '#64748b' }}>
                               {String(excelData[0].data[mapping.excelColumn] || '-')}
                             </span>
                           </div>
@@ -438,4 +599,3 @@ export default function ColumnMappingPage() {
     </div>
   );
 }
-

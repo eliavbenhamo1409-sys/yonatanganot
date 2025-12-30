@@ -117,15 +117,40 @@ export const RECEIPT_FIELDS: Record<ReceiptField, { label: string; required: boo
   ignore: { label: 'התעלם', required: false, type: 'none' },
 };
 
-// מילות מפתח לזיהוי AI
+// מילות מפתח לזיהוי AI - תומך בפורמטים שונים של אקסל
 export const FIELD_KEYWORDS: Record<ReceiptField, string[]> = {
-  customerName: ['שם', 'לקוח', 'לקוחה', 'שם לקוח', 'customer', 'name', 'client', 'מקבל'],
-  amount: ['סכום', 'סה"כ', 'סהכ', 'מחיר', 'עלות', 'amount', 'total', 'price', 'sum', 'שולם'],
-  date: ['תאריך', 'date', 'יום', 'תאריך תשלום'],
-  description: ['תיאור', 'פירוט', 'שירות', 'מוצר', 'description', 'details', 'service', 'product'],
-  paymentMethod: ['אמצעי תשלום', 'תשלום', 'payment', 'method', 'צ\'יק', 'מזומן', 'העברה', 'אשראי'],
-  transactionId: ['מספר עסקה', 'אסמכתא', 'reference', 'transaction', 'id', 'מספר'],
-  notes: ['הערות', 'הערה', 'notes', 'note', 'comments'],
-  ignore: [],
+  customerName: [
+    'שם', 'לקוח', 'לקוחה', 'שם לקוח', 'customer', 'name', 'client', 'מקבל',
+    'שם הלקוח', 'לקוחות', 'משלם', 'קונה', 'רוכש'
+  ],
+  amount: [
+    'סכום', 'סה"כ', 'סהכ', 'מחיר', 'עלות', 'amount', 'total', 'price', 'sum', 'שולם',
+    'כולל מע"מ', 'כולל מעמ', 'ללא מע"מ', 'ללא מעמ', 'סה״כ', 'סכום לתשלום',
+    'תשלום', 'סכום כולל', 'מחיר סופי', 'בולל מעמ'
+  ],
+  date: [
+    'תאריך', 'date', 'יום', 'תאריך תשלום', 'תאריך עסקה', 'תאריך קבלה',
+    'מועד', 'בתאריך'
+  ],
+  description: [
+    'תיאור', 'פירוט', 'שירות', 'מוצר', 'description', 'details', 'service', 'product',
+    'פרטים', 'תיאור העסקה', 'שירותים', 'מוצרים', 'עבור', 'בגין'
+  ],
+  paymentMethod: [
+    'אמצעי תשלום', 'תשלום', 'payment', 'method', 'צ\'יק', 'מזומן', 'העברה', 'אשראי',
+    'א. תשלום', 'אמצעי', 'שיטת תשלום', 'bit', 'ביט', 'paybox', 'פייבוקס',
+    'העברה בנקאית', 'כרטיס אשראי', 'צק', 'שק', 'מזומנים', 'cash'
+  ],
+  transactionId: [
+    'מספר עסקה', 'אסמכתא', 'reference', 'transaction', 'id', 'מספר',
+    'מס\'', 'מס', 'מספר קבלה', 'מספר חשבונית', 'אסמכתה', 'ref'
+  ],
+  notes: [
+    'הערות', 'הערה', 'notes', 'note', 'comments', 'comment',
+    'הערות נוספות', 'מידע נוסף', 'פרטים נוספים'
+  ],
+  ignore: [
+    'מסמך', 'סוג מסמך', 'מע"מ', 'מעמ', 'vat', 'document', 'type'
+  ],
 };
 
