@@ -21,6 +21,8 @@ import {
   Zap,
   Search,
   Database,
+  Table2,
+  Edit,
 } from 'lucide-react';
 
 // AI Thinking Messages
@@ -354,6 +356,48 @@ export default function DashboardPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Smart Worksheet Button */}
+                <motion.button
+                  onClick={() => router.push('/dashboard/worksheet')}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  style={{
+                    width: '100%',
+                    marginTop: '1.5rem',
+                    padding: '1rem 1.5rem',
+                    border: '2px solid #8b5cf6',
+                    borderRadius: '0.75rem',
+                    background: 'rgba(139, 92, 246, 0.1)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.75rem',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{ 
+                    width: '2.5rem', 
+                    height: '2.5rem', 
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)', 
+                    borderRadius: '0.5rem', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center' 
+                  }}>
+                    <Table2 style={{ width: '1.25rem', height: '1.25rem', color: 'white' }} />
+                  </div>
+                  <div style={{ textAlign: 'right', flex: 1 }}>
+                    <p style={{ color: 'white', fontSize: '1rem', fontWeight: '600', margin: 0 }}>
+                      גיליון עבודה חכם
+                    </p>
+                    <p style={{ color: '#a78bfa', fontSize: '0.8rem', margin: 0 }}>
+                      ערוך ידנית עם תפריטים מהירים + ייצוא Excel
+                    </p>
+                  </div>
+                  <Edit style={{ width: '1.25rem', height: '1.25rem', color: '#8b5cf6' }} />
+                </motion.button>
               </motion.div>
             )}
 
