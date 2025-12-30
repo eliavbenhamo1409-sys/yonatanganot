@@ -13,52 +13,51 @@ import {
 import { BusinessInfo, ReceiptData, ReceiptSettings } from '@/types';
 import JSZip from 'jszip';
 
-// רישום פונט עברי - David Libre שתומך בעברית באמת
+// Register Hebrew font - Rubik from Google Fonts
 Font.register({
-  family: 'David',
+  family: 'Rubik',
   fonts: [
     {
-      src: 'https://fonts.gstatic.com/s/davidlibre/v15/snfus0W_99N64iuYSvp4W8GIw7qbSjORSo9W.ttf',
+      src: 'https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4iFV0U1.ttf',
       fontWeight: 400,
     },
     {
-      src: 'https://fonts.gstatic.com/s/davidlibre/v15/snfzs0W_99N64iuYSvp4W8l86p6TYS-Y_8kIJ0Vo.ttf',
+      src: 'https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-NYiFV0U1.ttf',
       fontWeight: 700,
     },
   ],
 });
 
-// Disable word hyphenation for Hebrew
+// Disable word hyphenation
 Font.registerHyphenationCallback((word) => [word]);
 
 // ====================== DESIGN TEMPLATES ======================
 
 export type ReceiptTemplate = 'classic' | 'modern' | 'minimal';
 
-// Colors for each template
 const TEMPLATE_COLORS = {
   classic: {
-    primary: '#1a365d',      // Dark blue
-    secondary: '#2b6cb0',    // Medium blue
-    accent: '#48bb78',       // Green
+    primary: '#1a365d',
+    secondary: '#2b6cb0',
+    accent: '#38a169',
     light: '#f7fafc',
     border: '#e2e8f0',
     text: '#2d3748',
     textLight: '#718096',
   },
   modern: {
-    primary: '#7c3aed',      // Purple
-    secondary: '#a78bfa',    // Light purple
-    accent: '#10b981',       // Emerald
+    primary: '#7c3aed',
+    secondary: '#a78bfa',
+    accent: '#10b981',
     light: '#faf5ff',
     border: '#e9d5ff',
     text: '#1f2937',
     textLight: '#6b7280',
   },
   minimal: {
-    primary: '#111827',      // Black
-    secondary: '#4b5563',    // Gray
-    accent: '#059669',       // Green
+    primary: '#111827',
+    secondary: '#4b5563',
+    accent: '#059669',
     light: '#f9fafb',
     border: '#e5e7eb',
     text: '#111827',
@@ -66,7 +65,6 @@ const TEMPLATE_COLORS = {
   },
 };
 
-// Create styles dynamically based on template
 function createStyles(template: ReceiptTemplate) {
   const colors = TEMPLATE_COLORS[template];
   
@@ -75,14 +73,13 @@ function createStyles(template: ReceiptTemplate) {
       flexDirection: 'column',
       backgroundColor: '#ffffff',
       padding: 40,
-      fontFamily: 'David',
-      direction: 'rtl',
+      fontFamily: 'Rubik',
     },
-    // Header
+    // Header - RTL layout
     header: {
-      flexDirection: 'row',
+      flexDirection: 'row-reverse',
       justifyContent: 'space-between',
-      marginBottom: 25,
+      marginBottom: 30,
       paddingBottom: 20,
       borderBottomWidth: template === 'minimal' ? 1 : 3,
       borderBottomColor: colors.primary,
@@ -90,10 +87,10 @@ function createStyles(template: ReceiptTemplate) {
     },
     businessInfo: {
       textAlign: 'right',
-      flex: 1,
+      maxWidth: '55%',
     },
     businessName: {
-      fontSize: 22,
+      fontSize: 24,
       fontWeight: 700,
       color: colors.primary,
       marginBottom: 8,
@@ -102,32 +99,31 @@ function createStyles(template: ReceiptTemplate) {
     businessDetail: {
       fontSize: 10,
       color: colors.textLight,
-      marginBottom: 3,
+      marginBottom: 4,
       textAlign: 'right',
     },
-    customerInfo: {
+    receiptInfo: {
       textAlign: 'left',
-      flex: 1,
+      maxWidth: '40%',
     },
-    customerLabel: {
-      fontSize: 10,
-      color: colors.textLight,
-      marginBottom: 3,
-      textAlign: 'left',
-    },
-    customerName: {
+    receiptNumber: {
       fontSize: 14,
       fontWeight: 700,
-      color: colors.text,
+      color: colors.primary,
+      marginBottom: 4,
       textAlign: 'left',
     },
-    // Receipt title
-    titleSection: {
+    receiptDate: {
+      fontSize: 11,
+      color: colors.textLight,
+      textAlign: 'left',
+    },
+    // Title bar
+    titleBar: {
       backgroundColor: colors.primary,
-      padding: template === 'modern' ? 15 : 12,
-      marginBottom: 20,
+      padding: 15,
+      marginBottom: 25,
       borderRadius: template === 'modern' ? 8 : 0,
-      alignItems: 'center',
     },
     titleText: {
       fontSize: 20,
@@ -135,41 +131,37 @@ function createStyles(template: ReceiptTemplate) {
       color: '#ffffff',
       textAlign: 'center',
     },
-    // Info section
-    infoSection: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginBottom: 20,
+    // Customer section
+    customerSection: {
+      marginBottom: 25,
       padding: 15,
       backgroundColor: colors.light,
       borderRadius: template === 'modern' ? 8 : 0,
+      borderRightWidth: 4,
+      borderRightColor: colors.secondary,
+      borderRightStyle: 'solid',
     },
-    infoBlock: {
-      alignItems: 'center',
-    },
-    infoLabel: {
-      fontSize: 9,
+    customerLabel: {
+      fontSize: 10,
       color: colors.textLight,
-      marginBottom: 4,
+      marginBottom: 5,
+      textAlign: 'right',
     },
-    infoValue: {
-      fontSize: 12,
+    customerName: {
+      fontSize: 16,
       fontWeight: 700,
       color: colors.text,
+      textAlign: 'right',
     },
-    // Table
+    // Details table
     table: {
-      marginTop: 15,
-      marginBottom: 15,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderStyle: 'solid',
+      marginBottom: 25,
     },
     tableHeader: {
-      flexDirection: 'row',
+      flexDirection: 'row-reverse',
       backgroundColor: colors.primary,
-      paddingVertical: 10,
-      paddingHorizontal: 10,
+      paddingVertical: 12,
+      paddingHorizontal: 15,
     },
     tableHeaderCell: {
       fontSize: 11,
@@ -178,44 +170,62 @@ function createStyles(template: ReceiptTemplate) {
       textAlign: 'center',
     },
     tableRow: {
-      flexDirection: 'row',
+      flexDirection: 'row-reverse',
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
       borderBottomStyle: 'solid',
       paddingVertical: 12,
-      paddingHorizontal: 10,
+      paddingHorizontal: 15,
       backgroundColor: '#ffffff',
     },
     tableCell: {
-      fontSize: 10,
+      fontSize: 11,
       color: colors.text,
       textAlign: 'center',
     },
-    // Column widths
-    col1: { width: '25%' },
-    col2: { width: '35%' },
-    col3: { width: '20%' },
+    col1: { width: '30%' },
+    col2: { width: '25%' },
+    col3: { width: '25%' },
     col4: { width: '20%' },
-    // Total row
+    // Total section
     totalSection: {
-      flexDirection: 'row',
+      flexDirection: 'row-reverse',
       backgroundColor: colors.accent,
-      paddingVertical: 12,
-      paddingHorizontal: 20,
-      marginTop: 5,
+      paddingVertical: 15,
+      paddingHorizontal: 25,
       borderRadius: template === 'modern' ? 8 : 0,
       justifyContent: 'space-between',
       alignItems: 'center',
+      marginBottom: 20,
     },
     totalLabel: {
-      fontSize: 14,
+      fontSize: 16,
       fontWeight: 700,
       color: '#ffffff',
     },
     totalAmount: {
-      fontSize: 18,
+      fontSize: 22,
       fontWeight: 700,
       color: '#ffffff',
+    },
+    // Notes
+    notesSection: {
+      marginBottom: 25,
+      padding: 15,
+      backgroundColor: colors.light,
+      borderRadius: template === 'modern' ? 8 : 0,
+    },
+    notesLabel: {
+      fontSize: 11,
+      fontWeight: 700,
+      color: colors.text,
+      marginBottom: 5,
+      textAlign: 'right',
+    },
+    notesText: {
+      fontSize: 10,
+      color: colors.textLight,
+      textAlign: 'right',
     },
     // Footer
     footer: {
@@ -229,40 +239,20 @@ function createStyles(template: ReceiptTemplate) {
       paddingTop: 15,
     },
     footerRow: {
-      flexDirection: 'row',
+      flexDirection: 'row-reverse',
       justifyContent: 'space-between',
-      alignItems: 'flex-end',
+      alignItems: 'center',
     },
     footerText: {
-      fontSize: 8,
+      fontSize: 9,
       color: colors.textLight,
-      marginBottom: 3,
+      textAlign: 'right',
     },
-    digitalSignature: {
+    signatureText: {
       fontSize: 10,
       fontWeight: 700,
       color: colors.primary,
-      marginTop: 5,
-    },
-    // Notes section
-    notesSection: {
-      marginTop: 20,
-      padding: 15,
-      backgroundColor: colors.light,
-      borderRadius: template === 'modern' ? 8 : 0,
-      borderLeftWidth: 3,
-      borderLeftColor: colors.secondary,
-      borderLeftStyle: 'solid',
-    },
-    notesLabel: {
-      fontSize: 10,
-      fontWeight: 700,
-      color: colors.text,
-      marginBottom: 5,
-    },
-    notesText: {
-      fontSize: 9,
-      color: colors.textLight,
+      textAlign: 'left',
     },
   });
 }
@@ -271,10 +261,10 @@ function createStyles(template: ReceiptTemplate) {
 
 const formatNumber = (num: number): string => {
   if (isNaN(num) || num === null || num === undefined) return '0.00';
-  return new Intl.NumberFormat('he-IL', {
+  return num.toLocaleString('he-IL', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(num);
+  });
 };
 
 const formatDateSafe = (date: Date | string | null | undefined): string => {
@@ -285,6 +275,7 @@ const formatDateSafe = (date: Date | string | null | undefined): string => {
     if (date instanceof Date) {
       d = date;
     } else if (typeof date === 'string') {
+      // Try DD/MM/YYYY format
       const parts = date.split('/');
       if (parts.length === 3) {
         const day = parseInt(parts[0], 10);
@@ -319,15 +310,14 @@ const formatTodayDate = (): string => {
   return `${day}/${month}/${year}`;
 };
 
-// Reverse Hebrew text for proper display in PDF
-const reverseHebrew = (text: string): string => {
-  if (!text) return '';
-  // Check if contains Hebrew
-  if (/[\u0590-\u05FF]/.test(text)) {
-    // Split into segments and reverse Hebrew parts
-    return text.split('').reverse().join('');
-  }
-  return text;
+// Business type in Hebrew
+const getBusinessTypeHebrew = (type: string): string => {
+  const types: Record<string, string> = {
+    'osek_patur': 'עוסק פטור',
+    'osek_morshe': 'עוסק מורשה',
+    'company': 'חברה בע"מ',
+  };
+  return types[type] || 'עסק';
 };
 
 // ====================== RECEIPT COMPONENT ======================
@@ -348,93 +338,85 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
   const styles = createStyles(template);
   const currencySymbol = settings.currencySymbol || '₪';
   const formattedDate = formatDateSafe(receipt.date);
-  
-  // Business type text
-  const businessTypeMap: Record<string, string> = {
-    'osek_patur': 'רוטפ קסוע',
-    'osek_morshe': 'השרומ קסוע',
-    'company': 'מ"עב הרבח',
-  };
-  const businessTypeText = businessTypeMap[businessInfo.businessType] || 'קסע';
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          {/* Customer info - left side */}
-          <View style={styles.customerInfo}>
-            <Text style={styles.customerLabel}>{reverseHebrew('לכבוד')}</Text>
-            <Text style={styles.customerName}>{reverseHebrew(receipt.customerName)}</Text>
-          </View>
-          
-          {/* Business info - right side */}
+          {/* Business Info - Right side */}
           <View style={styles.businessInfo}>
-            <Text style={styles.businessName}>{reverseHebrew(businessInfo.name)}</Text>
-            <Text style={styles.businessDetail}>{businessTypeText} {businessInfo.businessId}</Text>
+            <Text style={styles.businessName}>{businessInfo.name}</Text>
+            <Text style={styles.businessDetail}>
+              {getBusinessTypeHebrew(businessInfo.businessType)} | {businessInfo.businessId}
+            </Text>
             {businessInfo.address && (
-              <Text style={styles.businessDetail}>{reverseHebrew(businessInfo.address)}</Text>
+              <Text style={styles.businessDetail}>{businessInfo.address}</Text>
             )}
             {businessInfo.phone && (
-              <Text style={styles.businessDetail}>{reverseHebrew('טלפון')}: {businessInfo.phone}</Text>
+              <Text style={styles.businessDetail}>{businessInfo.phone}</Text>
             )}
             {businessInfo.email && (
               <Text style={styles.businessDetail}>{businessInfo.email}</Text>
             )}
           </View>
+          
+          {/* Receipt Info - Left side */}
+          <View style={styles.receiptInfo}>
+            <Text style={styles.receiptNumber}>קבלה מס׳ {receipt.receiptNumber}</Text>
+            <Text style={styles.receiptDate}>תאריך: {formattedDate}</Text>
+          </View>
         </View>
 
-        {/* Receipt Title */}
-        <View style={styles.titleSection}>
-          <Text style={styles.titleText}>{receipt.receiptNumber} {reverseHebrew('קבלה')}</Text>
+        {/* Title Bar */}
+        <View style={styles.titleBar}>
+          <Text style={styles.titleText}>קבלה</Text>
         </View>
 
-        {/* Info Section */}
-        <View style={styles.infoSection}>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>{reverseHebrew('אמצעי תשלום')}</Text>
-            <Text style={styles.infoValue}>{reverseHebrew(receipt.paymentMethod || 'לא צוין')}</Text>
-          </View>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>{reverseHebrew('תאריך')}</Text>
-            <Text style={styles.infoValue}>{formattedDate}</Text>
-          </View>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>{reverseHebrew('מספר קבלה')}</Text>
-            <Text style={styles.infoValue}>{receipt.receiptNumber}</Text>
-          </View>
+        {/* Customer Section */}
+        <View style={styles.customerSection}>
+          <Text style={styles.customerLabel}>התקבל מאת:</Text>
+          <Text style={styles.customerName}>{receipt.customerName || 'לקוח'}</Text>
         </View>
 
         {/* Details Table */}
         <View style={styles.table}>
-          {/* Header */}
           <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderCell, styles.col4]}>{reverseHebrew('סכום')}</Text>
-            <Text style={[styles.tableHeaderCell, styles.col3]}>{reverseHebrew('תאריך')}</Text>
-            <Text style={[styles.tableHeaderCell, styles.col2]}>{reverseHebrew('פירוט')}</Text>
-            <Text style={[styles.tableHeaderCell, styles.col1]}>{reverseHebrew('סוג תשלום')}</Text>
+            <Text style={[styles.tableHeaderCell, styles.col1]}>סכום</Text>
+            <Text style={[styles.tableHeaderCell, styles.col2]}>אמצעי תשלום</Text>
+            <Text style={[styles.tableHeaderCell, styles.col3]}>תאריך</Text>
+            <Text style={[styles.tableHeaderCell, styles.col4]}>פירוט</Text>
           </View>
           
-          {/* Data Row */}
           <View style={styles.tableRow}>
-            <Text style={[styles.tableCell, styles.col4]}>{currencySymbol}{formatNumber(receipt.amount)}</Text>
-            <Text style={[styles.tableCell, styles.col3]}>{formattedDate}</Text>
-            <Text style={[styles.tableCell, styles.col2]}>{reverseHebrew(receipt.description || 'תשלום')}</Text>
-            <Text style={[styles.tableCell, styles.col1]}>{reverseHebrew(receipt.paymentMethod || '-')}</Text>
+            <Text style={[styles.tableCell, styles.col1]}>
+              {currencySymbol}{formatNumber(receipt.amount)}
+            </Text>
+            <Text style={[styles.tableCell, styles.col2]}>
+              {receipt.paymentMethod || '-'}
+            </Text>
+            <Text style={[styles.tableCell, styles.col3]}>
+              {formattedDate}
+            </Text>
+            <Text style={[styles.tableCell, styles.col4]}>
+              {receipt.description || 'תשלום'}
+            </Text>
           </View>
         </View>
 
         {/* Total */}
         <View style={styles.totalSection}>
-          <Text style={styles.totalAmount}>{currencySymbol}{formatNumber(receipt.amount)}</Text>
-          <Text style={styles.totalLabel}>{reverseHebrew('סה"כ שולם')}</Text>
+          <Text style={styles.totalLabel}>סה״כ שולם</Text>
+          <Text style={styles.totalAmount}>
+            {currencySymbol}{formatNumber(receipt.amount)}
+          </Text>
         </View>
 
         {/* Notes */}
         {receipt.notes && (
           <View style={styles.notesSection}>
-            <Text style={styles.notesLabel}>{reverseHebrew('הערות')}</Text>
-            <Text style={styles.notesText}>{reverseHebrew(receipt.notes)}</Text>
+            <Text style={styles.notesLabel}>הערות:</Text>
+            <Text style={styles.notesText}>{receipt.notes}</Text>
           </View>
         )}
 
@@ -442,18 +424,16 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
         <View style={styles.footer}>
           <View style={styles.footerRow}>
             <View>
-              <Text style={styles.footerText}>{formatTodayDate()} :{reverseHebrew('תאריך הפקה')}</Text>
+              <Text style={styles.footerText}>
+                {businessInfo.vatExempt ? 'פטור מגביית מע"מ עפ"י סעיף 31 לחוק' : ''}
+              </Text>
+              <Text style={styles.footerText}>תאריך הפקה: {formatTodayDate()}</Text>
             </View>
             <View>
-              <Text style={styles.digitalSignature}>{reverseHebrew('מסמך ממוחשב חתום דיגיטלית')}</Text>
-              <Text style={styles.footerText}>{reverseHebrew('הופק על ידי קבליט')}</Text>
+              <Text style={styles.signatureText}>מסמך ממוחשב - חתום דיגיטלית</Text>
+              <Text style={styles.footerText}>הופק על ידי קבליט</Text>
             </View>
           </View>
-          {businessInfo.vatExempt && (
-            <Text style={[styles.footerText, { textAlign: 'center', marginTop: 8 }]}>
-              {reverseHebrew('פטור מגביית מע"מ עפ"י סעיף 31 לחוק')}
-            </Text>
-          )}
         </View>
       </Page>
     </Document>
@@ -468,9 +448,9 @@ export async function generateSinglePdf(
   settings: ReceiptSettings,
   template: ReceiptTemplate = 'classic'
 ): Promise<Blob> {
+  console.log(`[PDF] Generating receipt ${receipt.receiptNumber} for ${receipt.customerName}...`);
+  
   try {
-    console.log(`[PDF] Generating PDF for receipt ${receipt.receiptNumber}...`);
-    
     const doc = (
       <ReceiptDocument
         receipt={receipt}
@@ -481,10 +461,10 @@ export async function generateSinglePdf(
     );
     
     const blob = await pdf(doc).toBlob();
-    console.log(`[PDF] Generated PDF, size: ${blob.size} bytes`);
+    console.log(`[PDF] Success - size: ${blob.size} bytes`);
     return blob;
   } catch (error) {
-    console.error(`[PDF] Error generating PDF:`, error);
+    console.error(`[PDF] Error:`, error);
     throw error;
   }
 }
@@ -511,6 +491,7 @@ function parseReceiptDate(dateStr: string | Date | null | undefined): Date {
   
   const str = String(dateStr).trim();
   
+  // DD/MM/YYYY
   const ddmmyyyy = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
   if (ddmmyyyy) {
     const [, day, month, year] = ddmmyyyy;
@@ -518,6 +499,7 @@ function parseReceiptDate(dateStr: string | Date | null | undefined): Date {
     if (!isNaN(date.getTime())) return date;
   }
   
+  // YYYY-MM-DD
   const yyyymmdd = str.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
   if (yyyymmdd) {
     const [, year, month, day] = yyyymmdd;
@@ -525,6 +507,7 @@ function parseReceiptDate(dateStr: string | Date | null | undefined): Date {
     if (!isNaN(date.getTime())) return date;
   }
   
+  // DD/MM/YY
   const ddmmyy = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/);
   if (ddmmyy) {
     const [, day, month, year] = ddmmyy;
@@ -533,6 +516,7 @@ function parseReceiptDate(dateStr: string | Date | null | undefined): Date {
     if (!isNaN(date.getTime())) return date;
   }
   
+  // Try native parsing
   const parsed = new Date(str);
   if (!isNaN(parsed.getTime())) return parsed;
   
@@ -546,18 +530,21 @@ export async function createZipWithReceipts(
   onProgress?: (progress: number) => void,
   template: ReceiptTemplate = 'classic'
 ): Promise<Blob> {
-  console.log(`[ZIP] Starting ZIP creation for ${extractedReceipts.length} receipts`);
+  console.log(`[ZIP] Starting generation for ${extractedReceipts.length} receipts`);
+  
+  if (!extractedReceipts || extractedReceipts.length === 0) {
+    throw new Error('לא נמצאו קבלות לייצור');
+  }
   
   const zip = new JSZip();
   const total = extractedReceipts.length;
   let successCount = 0;
-  let errorCount = 0;
   
   for (let i = 0; i < extractedReceipts.length; i++) {
     const extracted = extractedReceipts[i];
     const receiptNumber = settings.startingNumber + i;
     
-    console.log(`[ZIP] Processing receipt ${i + 1}/${total}: ${extracted.customerName}`);
+    console.log(`[ZIP] Processing ${i + 1}/${total}: ${extracted.customerName || 'Unknown'}`);
     
     const receiptData: ReceiptData = {
       id: `receipt-${receiptNumber}-${Date.now()}`,
@@ -574,11 +561,11 @@ export async function createZipWithReceipts(
     try {
       const pdfBlob = await generateSinglePdf(receiptData, businessInfo, settings, template);
       
-      if (pdfBlob && pdfBlob.size > 0) {
+      if (pdfBlob && pdfBlob.size > 100) {
+        // Create safe filename
         const safeName = (extracted.customerName || 'receipt')
           .replace(/[^א-תa-zA-Z0-9\s]/g, '')
           .replace(/\s+/g, '_')
-          .trim()
           .substring(0, 30) || 'receipt';
         
         const filename = `kabala_${receiptNumber}_${safeName}.pdf`;
@@ -587,31 +574,25 @@ export async function createZipWithReceipts(
         zip.file(filename, arrayBuffer);
         
         successCount++;
-        console.log(`[ZIP] Added ${filename} (${pdfBlob.size} bytes)`);
-      } else {
-        console.error(`[ZIP] Empty PDF for receipt ${receiptNumber}`);
-        errorCount++;
+        console.log(`[ZIP] Added: ${filename} (${pdfBlob.size} bytes)`);
       }
-      
     } catch (error) {
-      console.error(`[ZIP] Error generating receipt ${receiptNumber}:`, error);
-      errorCount++;
+      console.error(`[ZIP] Error for receipt ${receiptNumber}:`, error);
     }
     
+    // Update progress
     const progress = Math.round(((i + 1) / total) * 100);
     onProgress?.(progress);
     
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // Small delay between PDFs
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
   
-  console.log(`[ZIP] Generation complete: ${successCount} success, ${errorCount} errors`);
+  console.log(`[ZIP] Complete: ${successCount}/${total} receipts`);
   
-  const fileCount = Object.keys(zip.files).length;
-  if (fileCount === 0) {
+  if (successCount === 0) {
     throw new Error('לא נוצרו קבלות. בדוק את הנתונים ונסה שוב.');
   }
-  
-  console.log(`[ZIP] Creating ZIP file with ${fileCount} files...`);
   
   const zipBlob = await zip.generateAsync({ 
     type: 'blob',
@@ -619,7 +600,7 @@ export async function createZipWithReceipts(
     compressionOptions: { level: 6 }
   });
   
-  console.log(`[ZIP] ZIP created successfully, size: ${zipBlob.size} bytes`);
+  console.log(`[ZIP] Final size: ${zipBlob.size} bytes`);
   
   return zipBlob;
 }

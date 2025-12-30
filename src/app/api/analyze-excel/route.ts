@@ -577,7 +577,12 @@ function isDateValue(value: any): boolean {
   if (value instanceof Date) return !isNaN(value.getTime());
   
   // If it's a number (Excel serial date)
-  if (typeof value === 'number' && value > 25000 && value < 100000) return true;
+  if (typeof value === 'number') {
+    // Excel serial date (days since 1900)
+    if (value > 25000 && value < 100000) return true;
+    // Day of month (1-31)
+    if (value >= 1 && value <= 31) return true;
+  }
   
   const str = String(value).trim();
   
@@ -590,6 +595,7 @@ function isDateValue(value: any): boolean {
     /^\d{1,2}\s+[א-ת]+\s+\d{4}$/,               // Hebrew date format
     /^[א-ת]+\s+\d{1,2}\s*,?\s*\d{4}$/,          // Hebrew month format
     /^\d{8}$/,                                   // DDMMYYYY or YYYYMMDD
+    /^\d{1,2}$/,                                 // Just day number (1-31)
   ];
   
   for (const pattern of datePatterns) {
