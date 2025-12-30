@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useStore } from '@/store/useStore';
 import { useDropzone } from 'react-dropzone';
 import { parseExcelFile } from '@/utils/excelParser';
 
@@ -22,17 +21,18 @@ interface SetupData {
   commonAmounts: number[];
 }
 
-type SetupStep = 'upload' | 'setup' | 'worksheet';
+type SetupStep = 'upload' | 'analyzing' | 'setup' | 'worksheet';
 
 export default function WorksheetPage() {
   const router = useRouter();
-  const { excelData, setExcelData, setExcelHeaders } = useStore();
   
   // Upload state
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>('');
-  const [localData, setLocalData] = useState<any[]>([]);
+  
+  // AI extracted data
+  const [extractedData, setExtractedData] = useState<{ customerName: string; date: string; rowIndex: number }[]>([]);
   
   // Setup state
   const [step, setStep] = useState<SetupStep>('upload');
@@ -48,21 +48,14 @@ export default function WorksheetPage() {
   const [rows, setRows] = useState<WorksheetRow[]>([]);
   const [editingCell, setEditingCell] = useState<{ rowId: string; field: 'paymentMethod' | 'amount' } | null>(null);
   
-  // Check for existing data
-  useEffect(() => {
-    if (excelData && excelData.length > 0) {
-      setLocalData(excelData);
-      setStep('setup');
-    }
-  }, [excelData]);
-  
-  // Process uploaded file
+  // Process uploaded file with AI
   const processFile = async (file: File) => {
     setIsUploading(true);
     setUploadError(null);
     setFileName(file.name);
     
     try {
+      // Parse Excel
       const parsed = await parseExcelFile(file);
       
       if (!parsed.headers || parsed.headers.length === 0) {
@@ -73,17 +66,36 @@ export default function WorksheetPage() {
         throw new Error('הקובץ לא מכיל נתונים');
       }
       
-      // Save to store
-      setExcelHeaders(parsed.headers);
-      setExcelData(parsed.rows);
-      setLocalData(parsed.rows);
+      setStep('analyzing');
       
-      console.log(`[Worksheet] Loaded ${parsed.rows.length} rows`);
+      // Send to AI for extraction
+      const response = await fetch('/api/extract-names', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          headers: parsed.headers,
+          rows: parsed.rows.map(r => r.data || r),
+        }),
+      });
       
+      if (!response.ok) {
+        throw new Error('שגיאה בחילוץ הנתונים');
+      }
+      
+      const result = await response.json();
+      
+      if (!result.success || !result.rows || result.rows.length === 0) {
+        throw new Error('לא נמצאו שמות לקוחות או תאריכים בקובץ');
+      }
+      
+      console.log('[Worksheet] AI extracted:', result.rows.length, 'rows');
+      setExtractedData(result.rows);
       setStep('setup');
+      
     } catch (err) {
       console.error('File processing error:', err);
       setUploadError(err instanceof Error ? err.message : 'שגיאה בעיבוד הקובץ');
+      setStep('upload');
     } finally {
       setIsUploading(false);
     }
@@ -103,26 +115,23 @@ export default function WorksheetPage() {
       'text/csv': ['.csv'],
     },
     maxFiles: 1,
-    disabled: isUploading,
+    disabled: isUploading || step === 'analyzing',
   });
   
-  // Initialize rows from data
-  useEffect(() => {
-    const dataToUse = localData.length > 0 ? localData : excelData;
-    if (dataToUse && dataToUse.length > 0 && step === 'worksheet') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const initialRows: WorksheetRow[] = (dataToUse as any[]).map((r: any, index: number) => ({
-        id: `row-${index}`,
-        receiptNumber: setupData.startingNumber + index,
-        date: String(r['תאריך'] || r['date'] || r.data?.['תאריך'] || r.data?.['date'] || ''),
-        customerName: String(r['שם לקוח'] || r['שם'] || r['customerName'] || r['name'] || r.data?.['שם לקוח'] || r.data?.['שם'] || ''),
-        paymentMethod: '',
-        amount: null,
-        isComplete: false,
-      }));
-      setRows(initialRows);
-    }
-  }, [localData, excelData, step, setupData.startingNumber]);
+  // Initialize rows from extracted data
+  const initializeRows = () => {
+    const initialRows: WorksheetRow[] = extractedData.map((r, index) => ({
+      id: `row-${index}`,
+      receiptNumber: setupData.startingNumber + index,
+      date: r.date,
+      customerName: r.customerName,
+      paymentMethod: '',
+      amount: null,
+      isComplete: false,
+    }));
+    setRows(initialRows);
+    setStep('worksheet');
+  };
   
   // Add payment method
   const addPaymentMethod = useCallback(() => {
@@ -178,15 +187,15 @@ export default function WorksheetPage() {
   
   // Get color for payment method
   const getPaymentColor = (method: string) => {
-    const colors: Record<string, string> = {
-      'מזומן': 'bg-green-100 text-green-700 border-green-300',
-      'ביט': 'bg-blue-100 text-blue-700 border-blue-300',
-      'פייבוקס': 'bg-orange-100 text-orange-700 border-orange-300',
-      'העברה בנקאית': 'bg-purple-100 text-purple-700 border-purple-300',
-      'צ\'יק': 'bg-yellow-100 text-yellow-700 border-yellow-300',
-      'אשראי': 'bg-pink-100 text-pink-700 border-pink-300',
+    const colors: Record<string, { bg: string; text: string; border: string }> = {
+      'מזומן': { bg: 'rgba(16, 185, 129, 0.2)', text: '#10B981', border: 'rgba(16, 185, 129, 0.5)' },
+      'ביט': { bg: 'rgba(59, 130, 246, 0.2)', text: '#3B82F6', border: 'rgba(59, 130, 246, 0.5)' },
+      'פייבוקס': { bg: 'rgba(249, 115, 22, 0.2)', text: '#F97316', border: 'rgba(249, 115, 22, 0.5)' },
+      'העברה בנקאית': { bg: 'rgba(139, 92, 246, 0.2)', text: '#8B5CF6', border: 'rgba(139, 92, 246, 0.5)' },
+      'צ\'יק': { bg: 'rgba(234, 179, 8, 0.2)', text: '#EAB308', border: 'rgba(234, 179, 8, 0.5)' },
+      'אשראי': { bg: 'rgba(236, 72, 153, 0.2)', text: '#EC4899', border: 'rgba(236, 72, 153, 0.5)' },
     };
-    return colors[method] || 'bg-gray-100 text-gray-700 border-gray-300';
+    return colors[method] || { bg: 'rgba(100, 116, 139, 0.2)', text: '#64748B', border: 'rgba(100, 116, 139, 0.5)' };
   };
   
   // Calculate statistics
@@ -195,11 +204,6 @@ export default function WorksheetPage() {
     complete: rows.filter(r => r.isComplete).length,
     incomplete: rows.filter(r => !r.isComplete).length,
     totalAmount: rows.reduce((sum, r) => sum + (r.amount || 0), 0),
-  };
-  
-  // Continue to worksheet
-  const continueToWorksheet = () => {
-    setStep('worksheet');
   };
   
   // Export to Excel
@@ -220,82 +224,93 @@ export default function WorksheetPage() {
     XLSX.writeFile(wb, 'worksheet.xlsx');
   };
   
+  // Dark theme styles
+  const styles = {
+    page: { minHeight: '100vh', background: '#0F172A', fontFamily: 'Heebo, sans-serif', padding: '1.5rem' },
+    container: { maxWidth: '1200px', margin: '0 auto' },
+    card: { background: 'rgba(255,255,255,0.03)', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.1)', padding: '1.5rem' },
+    heading: { color: 'white', fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' },
+    subtext: { color: '#94A3B8', fontSize: '0.9rem' },
+    button: { background: 'linear-gradient(135deg, #8B5CF6 0%, #3FC1C9 100%)', color: 'white', border: 'none', borderRadius: '0.75rem', padding: '0.875rem 1.5rem', fontWeight: '600', cursor: 'pointer' },
+    backButton: { background: 'transparent', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' },
+  };
+  
   // Upload Step
   if (step === 'upload') {
     return (
-      <div className="min-h-screen bg-gray-50 p-6" dir="rtl">
-        <div className="max-w-2xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-2"
-            >
-              ← חזרה
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900">גיליון עבודה חכם</h1>
-            <p className="text-gray-600 mt-2">העלה קובץ Excel עם תאריכים ושמות לקוחות</p>
+      <div style={styles.page} dir="rtl">
+        <div style={styles.container}>
+          <button onClick={() => router.push('/dashboard')} style={styles.backButton}>
+            ← חזרה לדף הראשי
+          </button>
+          
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <h1 style={styles.heading}>📊 גיליון עבודה חכם</h1>
+            <p style={styles.subtext}>העלה קובץ Excel וה-AI יחלץ שמות לקוחות ותאריכים</p>
           </div>
           
-          {/* Upload Area */}
-          <div
-            {...getRootProps()}
-            className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${
-              isDragActive 
-                ? 'border-purple-500 bg-purple-50' 
-                : uploadError 
-                  ? 'border-red-400 bg-red-50' 
-                  : 'border-gray-300 hover:border-purple-400 bg-white'
-            }`}
-          >
-            <input {...getInputProps()} />
-            
-            <div className="w-20 h-20 mx-auto mb-6 bg-purple-100 rounded-2xl flex items-center justify-center">
-              {isUploading ? (
-                <svg className="w-10 h-10 text-purple-500 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+          <div style={{ ...styles.card, maxWidth: '600px', margin: '0 auto' }}>
+            <div
+              {...getRootProps()}
+              style={{
+                border: `2px dashed ${isDragActive ? '#8B5CF6' : uploadError ? '#EF4444' : '#475569'}`,
+                borderRadius: '1rem',
+                padding: '3rem 2rem',
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                background: isDragActive ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
+              }}
+            >
+              <input {...getInputProps()} />
+              
+              <div style={{ width: '5rem', height: '5rem', margin: '0 auto 1.5rem', background: 'rgba(139, 92, 246, 0.15)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem' }}>
+                📁
+              </div>
+              
+              {isDragActive ? (
+                <p style={{ color: '#8B5CF6', fontSize: '1.1rem', fontWeight: '500' }}>שחרר את הקובץ כאן...</p>
               ) : (
-                <svg className="w-10 h-10 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
+                <>
+                  <p style={{ color: 'white', fontSize: '1.25rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+                    גרור קובץ Excel או לחץ לבחירה
+                  </p>
+                  <p style={{ color: '#64748B', fontSize: '0.85rem' }}>תומך ב-XLSX, XLS, CSV</p>
+                </>
+              )}
+              
+              {uploadError && (
+                <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '0.5rem', color: '#EF4444' }}>
+                  {uploadError}
+                </div>
               )}
             </div>
             
-            {isUploading ? (
-              <p className="text-purple-600 text-lg font-medium">מעבד את הקובץ...</p>
-            ) : isDragActive ? (
-              <p className="text-purple-600 text-lg font-medium">שחרר את הקובץ כאן...</p>
-            ) : (
-              <>
-                <p className="text-gray-800 text-xl font-medium mb-2">גרור קובץ Excel או לחץ לבחירה</p>
-                <p className="text-gray-500 text-sm">תומך ב-XLSX, XLS, CSV</p>
-              </>
-            )}
-            
-            {uploadError && (
-              <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg text-red-600">
-                {uploadError}
-              </div>
-            )}
-            
-            {fileName && !uploadError && (
-              <div className="mt-4 text-sm text-gray-500">
-                קובץ: {fileName}
-              </div>
-            )}
+            <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '0.75rem', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+              <p style={{ color: '#A78BFA', fontWeight: '600', marginBottom: '0.5rem' }}>💡 טיפים</p>
+              <ul style={{ color: '#94A3B8', fontSize: '0.85rem', margin: 0, paddingRight: '1.25rem' }}>
+                <li>וודא שהקובץ מכיל עמודות של שם לקוח ותאריך</li>
+                <li>ה-AI יזהה אוטומטית את העמודות הרלוונטיות</li>
+                <li>תוכל להוסיף אמצעי תשלום וסכומים בשלב הבא</li>
+              </ul>
+            </div>
           </div>
-          
-          {/* Help Text */}
-          <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
-            <h3 className="font-semibold text-purple-800 mb-2">💡 טיפים</h3>
-            <ul className="text-sm text-purple-700 space-y-1">
-              <li>• וודא שהקובץ מכיל עמודות של תאריך ושם לקוח</li>
-              <li>• השורה הראשונה צריכה להכיל כותרות</li>
-              <li>• ניתן להשלים אמצעי תשלום וסכומים בשלב הבא</li>
-            </ul>
+        </div>
+      </div>
+    );
+  }
+  
+  // Analyzing Step
+  if (step === 'analyzing') {
+    return (
+      <div style={styles.page} dir="rtl">
+        <div style={{ ...styles.container, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+          <div style={{ width: '6rem', height: '6rem', marginBottom: '1.5rem', background: 'linear-gradient(135deg, #8B5CF6 0%, #3FC1C9 100%)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 2s infinite' }}>
+            <span style={{ fontSize: '2.5rem' }}>🤖</span>
           </div>
+          <h2 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem' }}>AI מנתח את הקובץ...</h2>
+          <p style={{ color: '#94A3B8' }}>מחפש שמות לקוחות ותאריכים</p>
+          <p style={{ color: '#64748B', fontSize: '0.85rem', marginTop: '0.5rem' }}>{fileName}</p>
         </div>
       </div>
     );
@@ -303,130 +318,97 @@ export default function WorksheetPage() {
   
   // Setup Step
   if (step === 'setup') {
-    const dataCount = localData.length || excelData?.length || 0;
-    
     return (
-      <div className="min-h-screen bg-gray-50 p-6" dir="rtl">
-        <div className="max-w-3xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <button
-              onClick={() => setStep('upload')}
-              className="text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-2"
-            >
-              ← החלף קובץ
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900">הגדרת גיליון עבודה</h1>
-            <p className="text-gray-600 mt-2">
-              נמצאו <span className="font-bold text-purple-600">{dataCount}</span> שורות בקובץ
-              {fileName && <span className="text-gray-400"> ({fileName})</span>}
+      <div style={styles.page} dir="rtl">
+        <div style={{ ...styles.container, maxWidth: '700px' }}>
+          <button onClick={() => setStep('upload')} style={styles.backButton}>
+            ← החלף קובץ
+          </button>
+          
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <h1 style={styles.heading}>⚙️ הגדרות גיליון</h1>
+            <p style={styles.subtext}>
+              נמצאו <span style={{ color: '#8B5CF6', fontWeight: 'bold' }}>{extractedData.length}</span> לקוחות בקובץ
             </p>
           </div>
           
-          {/* Setup Form */}
-          <div className="space-y-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {/* Starting Number */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">1</span>
+            <div style={styles.card}>
+              <h2 style={{ color: 'white', fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ width: '1.75rem', height: '1.75rem', background: 'rgba(139, 92, 246, 0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A78BFA', fontSize: '0.8rem', fontWeight: 'bold' }}>1</span>
                 מספר קבלה התחלתי
               </h2>
               <input
                 type="number"
                 value={setupData.startingNumber}
                 onChange={(e) => setSetupData(prev => ({ ...prev, startingNumber: parseInt(e.target.value) || 1 }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                style={{ width: '100%', padding: '0.875rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', color: 'white', fontSize: '1.25rem', fontWeight: '600', textAlign: 'center' }}
                 min="1"
               />
             </div>
             
             {/* Payment Methods */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">2</span>
+            <div style={styles.card}>
+              <h2 style={{ color: 'white', fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ width: '1.75rem', height: '1.75rem', background: 'rgba(139, 92, 246, 0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A78BFA', fontSize: '0.8rem', fontWeight: 'bold' }}>2</span>
                 שיטות תשלום
               </h2>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {setupData.paymentMethods.map((method) => (
-                  <div
-                    key={method}
-                    className={`px-3 py-2 rounded-full border flex items-center gap-2 ${getPaymentColor(method)}`}
-                  >
-                    <span>{method}</span>
-                    <button
-                      onClick={() => removePaymentMethod(method)}
-                      className="w-5 h-5 rounded-full bg-white/50 hover:bg-white flex items-center justify-center"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+                {setupData.paymentMethods.map((method) => {
+                  const color = getPaymentColor(method);
+                  return (
+                    <div key={method} style={{ padding: '0.5rem 0.875rem', borderRadius: '2rem', background: color.bg, border: `1px solid ${color.border}`, color: color.text, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                      <span>{method}</span>
+                      <button onClick={() => removePaymentMethod(method)} style={{ background: 'transparent', border: 'none', color: color.text, cursor: 'pointer', padding: 0 }}>×</button>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex gap-2">
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <input
                   type="text"
                   value={newPaymentMethod}
                   onChange={(e) => setNewPaymentMethod(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addPaymentMethod()}
                   placeholder="הוסף שיטת תשלום..."
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  style={{ flex: 1, padding: '0.625rem 0.875rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', color: 'white' }}
                 />
-                <button
-                  onClick={addPaymentMethod}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                >
-                  הוסף
-                </button>
+                <button onClick={addPaymentMethod} style={{ padding: '0.625rem 1rem', background: '#8B5CF6', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}>הוסף</button>
               </div>
             </div>
             
             {/* Common Amounts */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">3</span>
-                סכומים נפוצים (ש"ח)
+            <div style={styles.card}>
+              <h2 style={{ color: 'white', fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ width: '1.75rem', height: '1.75rem', background: 'rgba(139, 92, 246, 0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A78BFA', fontSize: '0.8rem', fontWeight: 'bold' }}>3</span>
+                סכומים נפוצים (₪)
               </h2>
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
                 {setupData.commonAmounts.map((amount) => (
-                  <div
-                    key={amount}
-                    className="px-3 py-2 rounded-lg bg-gray-100 border border-gray-200 flex items-center gap-2"
-                  >
-                    <span className="font-semibold">₪{amount}</span>
-                    <button
-                      onClick={() => removeAmount(amount)}
-                      className="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-500"
-                    >
-                      ×
-                    </button>
+                  <div key={amount} style={{ padding: '0.5rem 0.875rem', borderRadius: '0.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                    <span style={{ fontWeight: '600' }}>₪{amount}</span>
+                    <button onClick={() => removeAmount(amount)} style={{ background: 'transparent', border: 'none', color: '#64748B', cursor: 'pointer', padding: 0 }}>×</button>
                   </div>
                 ))}
               </div>
-              <div className="flex gap-2">
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <input
                   type="number"
                   value={newAmount}
                   onChange={(e) => setNewAmount(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addAmount()}
                   placeholder="הוסף סכום..."
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  style={{ flex: 1, padding: '0.625rem 0.875rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', color: 'white' }}
                   min="1"
                 />
-                <button
-                  onClick={addAmount}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                >
-                  הוסף
-                </button>
+                <button onClick={addAmount} style={{ padding: '0.625rem 1rem', background: '#8B5CF6', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}>הוסף</button>
               </div>
             </div>
             
             {/* Continue Button */}
-            <button
-              onClick={continueToWorksheet}
-              className="w-full py-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-semibold text-lg hover:from-purple-600 hover:to-indigo-700 shadow-lg"
-            >
-              המשך ליצירת הגיליון ({dataCount} שורות) →
+            <button onClick={initializeRows} style={{ ...styles.button, width: '100%', padding: '1rem', fontSize: '1.1rem' }}>
+              המשך ליצירת הגיליון ({extractedData.length} שורות) →
             </button>
           </div>
         </div>
@@ -436,141 +418,76 @@ export default function WorksheetPage() {
   
   // Worksheet Step
   return (
-    <div className="min-h-screen bg-gray-50 p-6" dir="rtl">
-      <div className="max-w-6xl mx-auto">
+    <div style={styles.page} dir="rtl">
+      <div style={styles.container}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <button
-              onClick={() => setStep('setup')}
-              className="text-gray-500 hover:text-gray-700 mb-2 flex items-center gap-2 text-sm"
-            >
+            <button onClick={() => setStep('setup')} style={styles.backButton}>
               ← חזרה להגדרות
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">גיליון עבודה חכם</h1>
+            <h1 style={{ ...styles.heading, marginBottom: 0 }}>📊 גיליון עבודה חכם</h1>
           </div>
-          <div className="flex items-center gap-4">
-            {/* Stats */}
-            <div className="flex items-center gap-4 text-sm">
-              <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full">
-                ✓ {stats.complete} הושלמו
-              </div>
-              <div className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full">
-                ○ {stats.incomplete} חסרים
-              </div>
-              <div className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-semibold">
-                ₪{stats.totalAmount.toLocaleString()}
-              </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <span style={{ padding: '0.5rem 0.875rem', borderRadius: '2rem', background: 'rgba(16, 185, 129, 0.2)', color: '#10B981', fontSize: '0.85rem' }}>✓ {stats.complete} הושלמו</span>
+              <span style={{ padding: '0.5rem 0.875rem', borderRadius: '2rem', background: 'rgba(234, 179, 8, 0.2)', color: '#EAB308', fontSize: '0.85rem' }}>○ {stats.incomplete} חסרים</span>
+              <span style={{ padding: '0.5rem 0.875rem', borderRadius: '2rem', background: 'rgba(59, 130, 246, 0.2)', color: '#3B82F6', fontSize: '0.85rem', fontWeight: '600' }}>₪{stats.totalAmount.toLocaleString()}</span>
             </div>
-            {/* Export Button */}
-            <button
-              onClick={exportToExcel}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
-            >
-              <span>📥</span>
-              ייצא לאקסל
+            <button onClick={exportToExcel} style={{ padding: '0.625rem 1rem', background: '#10B981', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500' }}>
+              📥 ייצא לאקסל
             </button>
           </div>
         </div>
         
         {/* Table */}
-        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-          <table className="w-full">
+        <div style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr className="bg-gray-50 border-b">
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600 w-24">מס' קבלה</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600 w-28">תאריך</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">שם לקוח</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600 w-40">אמצעי תשלום</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600 w-32">מחיר (ש"ח)</th>
+              <tr style={{ background: 'rgba(139, 92, 246, 0.15)' }}>
+                <th style={{ padding: '0.875rem 1rem', textAlign: 'right', color: '#A78BFA', fontWeight: '600', fontSize: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>מס' קבלה</th>
+                <th style={{ padding: '0.875rem 1rem', textAlign: 'right', color: '#A78BFA', fontWeight: '600', fontSize: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>תאריך</th>
+                <th style={{ padding: '0.875rem 1rem', textAlign: 'right', color: '#A78BFA', fontWeight: '600', fontSize: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>שם לקוח</th>
+                <th style={{ padding: '0.875rem 1rem', textAlign: 'right', color: '#A78BFA', fontWeight: '600', fontSize: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.1)', width: '180px' }}>אמצעי תשלום</th>
+                <th style={{ padding: '0.875rem 1rem', textAlign: 'right', color: '#A78BFA', fontWeight: '600', fontSize: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.1)', width: '140px' }}>סכום (₪)</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row, index) => (
-                <tr
-                  key={row.id}
-                  className={`border-b transition-colors ${
-                    row.isComplete 
-                      ? 'bg-green-50/50' 
-                      : index % 2 === 0 
-                        ? 'bg-white' 
-                        : 'bg-gray-50/50'
-                  } hover:bg-blue-50/50`}
-                >
-                  {/* Receipt Number */}
-                  <td className="px-4 py-3">
-                    <span className="font-mono font-semibold text-gray-800">{row.receiptNumber}</span>
-                  </td>
-                  
-                  {/* Date */}
-                  <td className="px-4 py-3 text-gray-600">{row.date}</td>
-                  
-                  {/* Customer Name */}
-                  <td className="px-4 py-3 font-medium text-gray-800">{row.customerName}</td>
-                  
-                  {/* Payment Method - Dropdown */}
-                  <td className="px-4 py-3 relative">
+                <tr key={row.id} style={{ background: row.isComplete ? 'rgba(16, 185, 129, 0.05)' : index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <td style={{ padding: '0.75rem 1rem', color: '#94A3B8', fontFamily: 'monospace', fontWeight: '600' }}>{row.receiptNumber}</td>
+                  <td style={{ padding: '0.75rem 1rem', color: '#94A3B8' }}>{row.date}</td>
+                  <td style={{ padding: '0.75rem 1rem', color: 'white', fontWeight: '500' }}>{row.customerName}</td>
+                  <td style={{ padding: '0.75rem 1rem', position: 'relative' }}>
                     {editingCell?.rowId === row.id && editingCell?.field === 'paymentMethod' ? (
-                      <div className="absolute z-10 mt-1 bg-white rounded-lg shadow-lg border max-h-48 overflow-auto">
-                        {setupData.paymentMethods.map((method) => (
-                          <button
-                            key={method}
-                            onClick={() => updateRow(row.id, 'paymentMethod', method)}
-                            className={`w-full px-4 py-2 text-right hover:bg-gray-50 flex items-center gap-2 ${getPaymentColor(method)}`}
-                          >
-                            {method}
-                          </button>
-                        ))}
+                      <div style={{ position: 'absolute', zIndex: 10, top: '100%', right: 0, background: '#1E293B', borderRadius: '0.5rem', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', minWidth: '160px' }}>
+                        {setupData.paymentMethods.map((method) => {
+                          const color = getPaymentColor(method);
+                          return (
+                            <button key={method} onClick={() => updateRow(row.id, 'paymentMethod', method)} style={{ width: '100%', padding: '0.625rem 1rem', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', color: color.text, textAlign: 'right', cursor: 'pointer' }}>
+                              {method}
+                            </button>
+                          );
+                        })}
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setEditingCell({ rowId: row.id, field: 'paymentMethod' })}
-                        className={`px-3 py-1.5 rounded-full border text-sm w-full text-right ${
-                          row.paymentMethod 
-                            ? getPaymentColor(row.paymentMethod)
-                            : 'bg-yellow-50 border-yellow-200 text-yellow-600'
-                        }`}
-                      >
+                      <button onClick={() => setEditingCell({ rowId: row.id, field: 'paymentMethod' })} style={{ padding: '0.375rem 0.75rem', borderRadius: '2rem', background: row.paymentMethod ? getPaymentColor(row.paymentMethod).bg : 'rgba(234, 179, 8, 0.15)', border: `1px solid ${row.paymentMethod ? getPaymentColor(row.paymentMethod).border : 'rgba(234, 179, 8, 0.3)'}`, color: row.paymentMethod ? getPaymentColor(row.paymentMethod).text : '#EAB308', cursor: 'pointer', fontSize: '0.85rem', width: '100%', textAlign: 'right' }}>
                         {row.paymentMethod || 'בחר ▼'}
                       </button>
                     )}
                   </td>
-                  
-                  {/* Amount - Dropdown */}
-                  <td className="px-4 py-3 relative">
+                  <td style={{ padding: '0.75rem 1rem', position: 'relative' }}>
                     {editingCell?.rowId === row.id && editingCell?.field === 'amount' ? (
-                      <div className="absolute z-10 mt-1 bg-white rounded-lg shadow-lg border max-h-48 overflow-auto left-0">
-                        <input
-                          type="number"
-                          placeholder="הזן סכום..."
-                          className="w-full px-3 py-2 border-b text-left"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              const val = parseFloat((e.target as HTMLInputElement).value);
-                              if (!isNaN(val)) updateRow(row.id, 'amount', val);
-                            }
-                          }}
-                        />
+                      <div style={{ position: 'absolute', zIndex: 10, top: '100%', left: 0, background: '#1E293B', borderRadius: '0.5rem', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', minWidth: '120px' }}>
+                        <input type="number" placeholder="סכום..." style={{ width: '100%', padding: '0.625rem', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'white', textAlign: 'center' }} autoFocus onKeyDown={(e) => { if (e.key === 'Enter') { const val = parseFloat((e.target as HTMLInputElement).value); if (!isNaN(val)) updateRow(row.id, 'amount', val); } }} />
                         {setupData.commonAmounts.map((amount) => (
-                          <button
-                            key={amount}
-                            onClick={() => updateRow(row.id, 'amount', amount)}
-                            className="w-full px-4 py-2 text-left hover:bg-gray-50 font-semibold"
-                          >
+                          <button key={amount} onClick={() => updateRow(row.id, 'amount', amount)} style={{ width: '100%', padding: '0.625rem', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'white', textAlign: 'center', cursor: 'pointer', fontWeight: '600' }}>
                             ₪{amount}
                           </button>
                         ))}
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setEditingCell({ rowId: row.id, field: 'amount' })}
-                        className={`px-3 py-1.5 rounded-lg border text-sm w-full text-left font-semibold ${
-                          row.amount 
-                            ? 'bg-white border-gray-200 text-gray-800'
-                            : 'bg-yellow-50 border-yellow-200 text-yellow-600'
-                        }`}
-                      >
+                      <button onClick={() => setEditingCell({ rowId: row.id, field: 'amount' })} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.5rem', background: row.amount ? 'rgba(255,255,255,0.05)' : 'rgba(234, 179, 8, 0.15)', border: `1px solid ${row.amount ? 'rgba(255,255,255,0.1)' : 'rgba(234, 179, 8, 0.3)'}`, color: row.amount ? 'white' : '#EAB308', cursor: 'pointer', fontSize: '0.85rem', width: '100%', textAlign: 'center', fontWeight: '600' }}>
                         {row.amount ? `₪${row.amount}` : 'בחר ▼'}
                       </button>
                     )}
@@ -583,40 +500,29 @@ export default function WorksheetPage() {
         
         {/* Generate Receipts Button */}
         {stats.complete > 0 && (
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                // Save completed data to localStorage and navigate
-                const completedData = rows.filter(r => r.isComplete).map(r => ({
-                  customerName: r.customerName,
-                  amount: r.amount || 0,
-                  date: r.date,
-                  description: '',
-                  paymentMethod: r.paymentMethod,
-                  notes: '',
-                  rowNumber: r.receiptNumber,
-                  isComplete: true,
-                  missingFields: [] as string[],
-                }));
-                localStorage.setItem('worksheetData', JSON.stringify(completedData));
-                localStorage.setItem('worksheetStartNumber', String(setupData.startingNumber));
-                router.push('/dashboard/generate');
-              }}
-              className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold text-lg hover:from-green-600 hover:to-emerald-700 shadow-lg"
-            >
+          <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+            <button onClick={() => {
+              const completedData = rows.filter(r => r.isComplete).map(r => ({
+                customerName: r.customerName,
+                amount: r.amount || 0,
+                date: r.date,
+                description: '',
+                paymentMethod: r.paymentMethod,
+                notes: '',
+                rowNumber: r.receiptNumber,
+                isComplete: true,
+                missingFields: [] as string[],
+              }));
+              localStorage.setItem('extractedReceipts', JSON.stringify(completedData));
+              router.push('/dashboard/generate');
+            }} style={{ ...styles.button, padding: '1rem 2.5rem', fontSize: '1.1rem' }}>
               צור {stats.complete} קבלות →
             </button>
           </div>
         )}
       </div>
       
-      {/* Click outside to close dropdown */}
-      {editingCell && (
-        <div
-          className="fixed inset-0 z-0"
-          onClick={() => setEditingCell(null)}
-        />
-      )}
+      {editingCell && <div style={{ position: 'fixed', inset: 0, zIndex: 5 }} onClick={() => setEditingCell(null)} />}
     </div>
   );
 }
