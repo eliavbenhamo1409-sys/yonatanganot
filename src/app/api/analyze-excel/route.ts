@@ -581,15 +581,24 @@ function isDateValue(value: any): boolean {
   
   const str = String(value).trim();
   
-  // Check for date patterns
+  // Check for date patterns - comprehensive list
   const datePatterns = [
-    /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/,  // DD/MM/YYYY or similar
-    /^\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}$/,    // YYYY/MM/DD
+    /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4}$/,    // DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
+    /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2}$/,    // DD/MM/YY, DD-MM-YY
+    /^\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}$/,    // YYYY/MM/DD, YYYY-MM-DD
+    /^\d{1,2}\s*[\/\-\.]\s*\d{1,2}\s*[\/\-\.]\s*\d{2,4}$/, // With spaces
     /^\d{1,2}\s+[א-ת]+\s+\d{4}$/,               // Hebrew date format
+    /^[א-ת]+\s+\d{1,2}\s*,?\s*\d{4}$/,          // Hebrew month format
+    /^\d{8}$/,                                   // DDMMYYYY or YYYYMMDD
   ];
   
   for (const pattern of datePatterns) {
     if (pattern.test(str)) return true;
+  }
+  
+  // Also check if it contains date-like content with time
+  if (/\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/.test(str)) {
+    return true;
   }
   
   return false;
