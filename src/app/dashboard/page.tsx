@@ -104,43 +104,91 @@ export default function DashboardPage() {
     try {
       // Step 1: Parse Excel
       setStep('parsing');
-      const { headers, rows } = await parseExcelFile(file);
-
-      if (rows.length === 0) {
-        throw new Error('הקובץ לא מכיל שורות נתונים');
+      
+      let headers: string[] = [];
+      let rows: any[] = [];
+      
+      try {
+        const parsed = await parseExcelFile(file);
+        headers = parsed.headers;
+        rows = parsed.rows;
+      } catch (parseError) {
+        console.error('Excel parse error:', parseError);
+        throw new Error('שגיאה בקריאת הקובץ. וודא שזה קובץ Excel/CSV תקין.');
       }
 
+      if (!headers || headers.length === 0) {
+        throw new Error('הקובץ לא מכיל כותרות עמודות. וודא שהשורה הראשונה מכילה כותרות.');
+      }
+
+      if (!rows || rows.length === 0) {
+        throw new Error('הקובץ לא מכיל שורות נתונים מלבד הכותרות.');
+      }
+
+      console.log(`[Dashboard] Parsed ${rows.length} rows with ${headers.length} columns`);
+      
       setExcelHeaders(headers);
       setExcelData(rows);
 
       // Step 2: Send to AI for analysis
       setStep('analyzing');
       
-      const response = await fetch('/api/analyze-excel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          headers,
-          rows: rows.map(r => r.data),
-          businessInfo
-        }),
-      });
+      let response;
+      try {
+        response = await fetch('/api/analyze-excel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            headers,
+            rows: rows.map(r => r.data),
+            businessInfo
+          }),
+        });
+      } catch (fetchError) {
+        console.error('Fetch error:', fetchError);
+        throw new Error('שגיאה בחיבור לשרת. בדוק את החיבור לאינטרנט ונסה שוב.');
+      }
 
-      const result: AnalysisResult = await response.json();
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        console.error('API response error:', response.status, errorText);
+        throw new Error(`שגיאה בשרת (${response.status}). אנא נסה שוב.`);
+      }
+
+      let result: AnalysisResult;
+      try {
+        result = await response.json();
+      } catch (jsonError) {
+        console.error('JSON parse error:', jsonError);
+        throw new Error('שגיאה בעיבוד התשובה מהשרת. אנא נסה שוב.');
+      }
 
       if (!result.success) {
         throw new Error(result.error || 'שגיאה בניתוח הקובץ');
       }
 
+      // Validate that we got receipts
+      if (!result.receipts || result.receipts.length === 0) {
+        throw new Error('לא נמצאו קבלות בקובץ. וודא שהטבלה מכילה נתוני לקוחות, סכומים ותאריכים.');
+      }
+
+      console.log(`[Dashboard] Analysis complete: ${result.receipts.length} receipts found`);
+
       setAnalysisResult(result);
       setStep('done');
 
       // Save to localStorage for the generate page
-      localStorage.setItem('extractedReceipts', JSON.stringify(result.receipts));
-      localStorage.setItem('analysisSummary', JSON.stringify(result.summary));
+      try {
+        localStorage.setItem('extractedReceipts', JSON.stringify(result.receipts));
+        localStorage.setItem('analysisSummary', JSON.stringify(result.summary));
+      } catch (storageError) {
+        console.error('LocalStorage error:', storageError);
+        // Continue anyway - data is in state
+      }
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בעיבוד הקובץ');
+      console.error('Process file error:', err);
+      setError(err instanceof Error ? err.message : 'שגיאה בעיבוד הקובץ. אנא נסה שוב.');
       setStep('error');
     }
   };
